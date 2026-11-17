@@ -1,0 +1,22 @@
+# Tasks
+- [ ] Request landscape orientation when Flipster opens on mobile; verify graceful fallback.
+- [x] Connect the uploaded 4×4 ninja sprite sheet and animate its run, jump, fall, and game-over poses.
+- [x] Connect the Flipster Telegram bot and configure the Mini App launch button.
+- [x] Initialize Telegram's Mini App viewport support across game pages.
+- [x] Recreate the reference-style Flipster cover screen while keeping solo and multiplayer entry points usable.
+- [x] Refine the ninja's compact body and focused crescent eye; animate convincing running, tucked jump, landing, and upside-down poses.
+- [x] Verify running, jumping, landing, and upside-down animation in the playable game.
+- [x] Further reduce hazards and power-up frequency.
+- [x] Refine reference ninja, hazard proportions, and detailed orange controls.
+- [x] Verify gameplay tests and the updated playable view.
+- [x] Shrink the ninja and simplify its running legs into small triangles.
+- [x] Reduce hazard frequency and introduce spikes, bars, then lasers progressively.
+- [x] Test progression rules and verify solo gameplay.
+- [x] Match the new reference ninja, interface, and obstacle silhouettes/proportions.
+- [x] Add collectible shield and speed-up powers with tested effects.
+- [x] Verify solo and shared gameplay visuals and controls.
+- [x] Match the reference scenery and black ninja.
+- [x] Add jump/flip controls, two-sided obstacles, and physics tests.
+- [x] Verify gameplay and apply required package update.
+- [x] Add solo entry points, immediate gameplay, and replay after a collision.
+- [x] Verify solo controls and replay without a rival.
