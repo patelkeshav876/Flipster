@@ -184,25 +184,13 @@ export class GameEngine {
     ctx.fillStyle = colors["energy"] ?? "transparent"; ctx.fillRect(0, vh-12, vw,2);
     ctx.fillStyle = colors["cloud"] ?? "transparent";
     for (let x = -(this.distance * .3 % 90); x < vw; x += 90) ctx.fillRect(x, vh-6, 19, 1);
-    // 1. Golden brown dirt core
-    ctx.fillStyle = "#a16207";
-    ctx.fillRect(0, groundY, vw, TRACK_H);
-    ctx.fillStyle = "#78350f";
-    for (let x = -(this.distance * 0.85 % 28); x < vw; x += 28) {
-      ctx.fillRect(x, groundY + 2, 12, TRACK_H - 4);
+    ctx.fillStyle = colors["soil"] ?? "transparent"; ctx.fillRect(0, groundY, vw, TRACK_H);
+    ctx.fillStyle = colors["grass"] ?? "transparent"; ctx.fillRect(0, groundY-2, vw,3); ctx.fillRect(0, groundY+TRACK_H-1,vw,2);
+    ctx.fillStyle = colors["wood-light"] ?? "transparent";
+    for (let x = -(this.distance % 18); x < vw; x += 18) {
+      this.polygon([[x,groundY+3],[x+4,groundY+1],[x+12,groundY+2],[x+17,groundY+5],[x+13,groundY+7],[x+5,groundY+6]], "wood");
+      ctx.fillRect(x+4, groundY+2, 7, 1);
     }
-    // 2. Top grass border
-    ctx.fillStyle = "#84cc16";
-    ctx.fillRect(0, groundY - 3, vw, 4);
-    ctx.fillStyle = "#365314";
-    ctx.fillRect(0, groundY - 4, vw, 1);
-    ctx.fillRect(0, groundY + 1, vw, 1);
-    // 3. Bottom grass border (for inverted running)
-    ctx.fillStyle = "#84cc16";
-    ctx.fillRect(0, groundY + TRACK_H - 1, vw, 4);
-    ctx.fillStyle = "#365314";
-    ctx.fillRect(0, groundY + TRACK_H - 2, vw, 1);
-    ctx.fillRect(0, groundY + TRACK_H + 3, vw, 1);
     for (const o of this.obstacles) {
       const x = o.x - this.distance;
       if (x > vw + 40 || x + o.w < -40) continue;
