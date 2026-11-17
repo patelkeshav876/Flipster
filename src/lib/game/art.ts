@@ -2,31 +2,32 @@ import { GRAVITY, JUMP_V, PLAYER_H, TRACK_H, type Obstacle, type Runner } from "
 import type { Pickup, Powers } from "./powers";
 
 // Anchor registration for the 16 frames in the 1024x1024 character sprite sheet.
-// ax: horizontal upper-body anchor to eliminate horizontal drift/sliding across columns.
-// ay: vertical ground-contact foot baseline to eliminate vertical jumps across rows.
+// ax: horizontal body-center anchor for drift-free alignment.
+// ay: vertical ground-contact foot baseline (y = 240.00 for all frames).
 const FRAME_ANCHORS: { ax: number; ay: number }[] = [
-  /*  0 */ { ax: 166.98, ay: 236.00 },
-  /*  1 */ { ax: 158.67, ay: 235.00 },
-  /*  2 */ { ax: 146.77, ay: 228.00 },
-  /*  3 */ { ax: 129.05, ay: 238.00 },
-  /*  4 */ { ax: 165.48, ay: 225.00 },
-  /*  5 */ { ax: 155.94, ay: 216.00 },
-  /*  6 */ { ax: 144.99, ay: 214.00 },
-  /*  7 */ { ax: 133.91, ay: 231.00 },
-  /*  8 */ { ax: 164.32, ay: 219.00 },
-  /*  9 */ { ax: 154.64, ay: 221.00 },
-  /* 10 */ { ax: 144.44, ay: 219.00 },
-  /* 11 */ { ax: 134.81, ay: 218.00 },
-  /* 12 */ { ax: 163.85, ay: 203.00 },
-  /* 13 */ { ax: 155.74, ay: 207.00 },
-  /* 14 */ { ax: 146.82, ay: 207.00 },
-  /* 15 */ { ax: 134.89, ay: 205.00 },
+  /*  0 */ { ax: 127.45, ay: 240.00 },
+  /*  1 */ { ax: 130.00, ay: 240.00 },
+  /*  2 */ { ax: 126.60, ay: 240.00 },
+  /*  3 */ { ax: 122.43, ay: 240.00 },
+  /*  4 */ { ax: 126.11, ay: 240.00 },
+  /*  5 */ { ax: 127.97, ay: 240.00 },
+  /*  6 */ { ax: 121.99, ay: 240.00 },
+  /*  7 */ { ax: 121.69, ay: 240.00 },
+  /*  8 */ { ax: 127.63, ay: 240.00 },
+  /*  9 */ { ax: 127.52, ay: 240.00 },
+  /* 10 */ { ax: 127.56, ay: 240.00 },
+  /* 11 */ { ax: 128.08, ay: 240.00 },
+  /* 12 */ { ax: 128.44, ay: 240.00 },
+  /* 13 */ { ax: 128.11, ay: 240.00 },
+  /* 14 */ { ax: 127.80, ay: 240.00 },
+  /* 15 */ { ax: 127.91, ay: 240.00 },
 ];
 
-// Balanced 8-frame alternating running cycle:
-// Stride 1 (Right): 4 (reach) -> 8 (strike/plant) -> 5 (drive) -> 6 (pass)
-// Stride 2 (Left):  7 (reach) -> 9 (strike/plant) -> 10 (drive) -> 1 (pass)
-const RUN_CYCLE_FRAMES = [4, 8, 5, 6, 7, 9, 10, 1];
+// 8-frame running cycle using all 8 running frames from Sheet 1 (frames 0-7).
+// Provides a full alternating left-right stride with 6 distinct leg phases:
+// Left contact (0) → Left push-off (1) → Passing (2) → Right contact (3) →
+// Right push-off (4) → Left drive (5) → Passing (6) → Right drive (7)
+const RUN_CYCLE_FRAMES = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export class GameArt {
   private runnerImage = new Image();
@@ -193,11 +194,13 @@ export class GameArt {
       const runFps = powers.speed > 0 ? 15 : 12;
       const cycleProgress = time * runFps;
       const frameIndex = Math.floor(cycleProgress) % RUN_CYCLE_FRAMES.length;
-      const frame = dead ? 8 : runner.grounded ? RUN_CYCLE_FRAMES[frameIndex] : rising ? 14 : 12;
+      // Frame mapping: 0-7 = running, 8-11 = jump/transition (row 2), 12-15 = air/tuck (row 3)
+      // Dead: frame 15 (defeat pose). Jump rising: frame 12 (takeoff). Jump falling: frame 14 (descent).
+      const frame = dead ? 15 : runner.grounded ? RUN_CYCLE_FRAMES[frameIndex] : rising ? 12 : 14;
 
       const frameX = (frame % 4) * 256;
       const frameY = Math.floor(frame / 4) * 256;
-      const anchor = FRAME_ANCHORS[frame] ?? { ax: 150, ay: 225 };
+      const anchor = FRAME_ANCHORS[frame] ?? { ax: 128, ay: 240 };
 
       // Subtle, rhythmic body bounce synchronized with running contact phases
       const bounce = runner.grounded
