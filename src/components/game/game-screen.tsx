@@ -30,7 +30,7 @@ export function GameScreen({
   const [dead, setDead] = useState(false);
   const [paused, setPaused] = useState(false);
   const [portraitMobile, setPortraitMobile] = useState(false);
-  const [powers, setPowers] = useState({ shield: 0, speed: 0 });
+  const [powers, setPowers] = useState<{ shield: number; speed: number; stars?: number }>({ shield: 0, speed: 0, stars: 0 });
   const callbacks = useRef({ onScore, onDeath });
   callbacks.current = { onScore, onDeath };
 
@@ -149,8 +149,27 @@ export function GameScreen({
       )}
 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-5 pt-[calc(env(safe-area-inset-top)+14px)] font-mono">
-        {solo ? <span /> : <ScoreBlock label="YOU" value={dead ? myScore || localScore : localScore} dim={dead} />}
-        <ScoreBlock label={solo ? "METRES" : "RIVAL"} value={solo ? localScore : theirScore} align="right" dim={!solo && !theirAlive} />
+        {solo ? (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-cyan-400 font-bold backdrop-blur-md border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.35)]">
+              <svg className="size-4 fill-cyan-400 drop-shadow-[0_0_6px_#38bdf8]" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              <span className="text-sm tracking-wider">{powers.stars ?? 0}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-4">
+            <ScoreBlock label="YOU" value={dead ? myScore || localScore : localScore} dim={dead} />
+            <div className="flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-cyan-400 font-bold text-xs backdrop-blur-md border border-cyan-400/40 self-center">
+              <svg className="size-3.5 fill-cyan-400" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              <span>{powers.stars ?? 0}</span>
+            </div>
+          </div>
+        )}
+        <ScoreBlock label={solo ? "SCORE" : "RIVAL"} value={solo ? localScore : theirScore} align="right" dim={!solo && !theirAlive} />
       </div>
       {solo && !dead && <Button variant="ghost" size="icon" aria-label={paused ? "Resume game" : "Pause game"} className="absolute left-4 top-[calc(env(safe-area-inset-top)+14px)] size-12 text-game-ninja hover:bg-game-eye/25 [&_svg]:size-8" onClick={() => {
         engineRef.current?.setPaused(!paused); setPaused(!paused);
@@ -174,13 +193,19 @@ export function GameScreen({
       )}
 
       {!dead && myAlive && !spectator && (
-        <div className="absolute inset-x-0 bottom-0 flex justify-between px-7 pb-[calc(env(safe-area-inset-bottom)+32px)]">
-          <Button aria-label="Flip gravity" title="Flip" disabled={dead} onPointerDown={(event) => { event.preventDefault(); engineRef.current?.flip(); }} onClick={(event) => { if (event.detail === 0) engineRef.current?.flip(); }} className="game-control-button">
-            <span className="game-control-face"><svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true"><path d="M4 15 13 5l9 10h-6v25h-6V15zM24 8h6v25h6L27 43l-9-10h6z" /><path d="M19 8h2v33h-2z" /></svg></span>
-          </Button>
-          <Button aria-label="Jump" title="Jump" disabled={dead} onPointerDown={(event) => { event.preventDefault(); engineRef.current?.jump(); }} onClick={(event) => { if (event.detail === 0) engineRef.current?.jump(); }} className="game-control-button">
-            <span className="game-control-face"><svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true"><path d="m20 4 13 15h-9v25h-8V19H7z" /></svg></span>
-          </Button>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between px-7 pb-[calc(env(safe-area-inset-bottom)+24px)]">
+          <div className="pointer-events-auto flex flex-col items-center gap-1.5">
+            <Button aria-label="Flip gravity" title="Flip" disabled={dead} onPointerDown={(event) => { event.preventDefault(); engineRef.current?.flip(); }} onClick={(event) => { if (event.detail === 0) engineRef.current?.flip(); }} className="game-control-button">
+              <span className="game-control-face"><svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true"><path d="M4 15 13 5l9 10h-6v25h-6V15zM24 8h6v25h6L27 43l-9-10h6z" /><path d="M19 8h2v33h-2z" /></svg></span>
+            </Button>
+            <span className="font-display text-xs font-black tracking-widest text-game-control-highlight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">FLIP</span>
+          </div>
+          <div className="pointer-events-auto flex flex-col items-center gap-1.5">
+            <Button aria-label="Jump" title="Jump" disabled={dead} onPointerDown={(event) => { event.preventDefault(); engineRef.current?.jump(); }} onClick={(event) => { if (event.detail === 0) engineRef.current?.jump(); }} className="game-control-button">
+              <span className="game-control-face"><svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true"><path d="m20 4 13 15h-9v25h-8V19H7z" /></svg></span>
+            </Button>
+            <span className="font-display text-xs font-black tracking-widest text-game-control-highlight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">JUMP</span>
+          </div>
         </div>
       )}
     </main>

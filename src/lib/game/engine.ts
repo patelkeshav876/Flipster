@@ -39,7 +39,7 @@ export class GameEngine {
   private powerRand: () => number;
   private pickups: Pickup[] = [];
   private nextPickupX = FIRST_PICKUP_X;
-  private powers: Powers = { shield: 0, speed: 0 };
+  private powers: Powers = { shield: 0, speed: 0, stars: 0 };
   private paused = false;
 
   constructor(opts: EngineOptions) {
@@ -95,14 +95,17 @@ export class GameEngine {
       const kind = kinds[Math.floor(this.rand() * kinds.length)] ?? "spike";
       const tall = kind === "column" || kind === "laser";
       const side = this.rand() > 0.5 ? 1 : -1;
-      const h = kind === "column" ? 88 : kind === "laser" ? 140 : kind === "mace" ? 65 : kind === "blade" ? 20 : 18;
-      const w = kind === "column" ? 14 : kind === "laser" ? 23 : kind === "mace" ? 48 : kind === "blade" ? 40 : 14;
+      const h = kind === "column" ? 96 : kind === "laser" ? 140 : kind === "mace" ? 65 : kind === "blade" ? 20 : 18;
+      const w = kind === "column" ? 16 : kind === "laser" ? 23 : kind === "mace" ? 48 : kind === "blade" ? 40 : 14;
       this.obstacles.push({ x: this.nextSpawnX, w, h, side, tall, kind });
       this.nextSpawnX += obstacleGap(this.nextSpawnX, this.rand());
     }
     while (this.nextPickupX < this.distance + 2000) {
-      this.pickups.push({ x: this.nextPickupX, side: this.powerRand() > .5 ? 1 : -1, offset: 22, kind: this.powerRand() > .5 ? "shield" : "speed" });
-      this.nextPickupX += pickupGap(this.powerRand());
+      const isStar = this.powerRand() > 0.35;
+      const kind: PowerKind = isStar ? "star" : (this.powerRand() > 0.5 ? "shield" : "speed");
+      const offset = isStar ? 24 : 22;
+      this.pickups.push({ x: this.nextPickupX, side: this.powerRand() > 0.5 ? 1 : -1, offset, kind });
+      this.nextPickupX += isStar ? (550 + this.powerRand() * 450) : pickupGap(this.powerRand());
     }
   }
   private step(dt: number) {
@@ -110,7 +113,7 @@ export class GameEngine {
     this.powers = tickPowers(this.powers, dt);
     this.speed = Math.min(MAX_SPEED, START_SPEED + SPEED_GAIN * this.time) * (this.powers.speed > 0 ? SPEED_MULTIPLIER : 1);
     this.distance += this.speed * dt;
-    this.score = Math.floor(this.distance / 10);
+    this.score = Math.floor(this.distance / 10) + (this.powers.stars ?? 0) * 10;
     if (this.jumpBuffer > 0) {
       this.jumpBuffer -= dt;
       if (this.runner.grounded) { this.runner = jumpRunner(this.runner); this.jumpBuffer = 0; }

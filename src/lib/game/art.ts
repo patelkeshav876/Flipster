@@ -99,6 +99,16 @@ export class GameArt {
         this.polygon([[4, y], [8, y - 5], [10, y + 3]], "wood-light");
         this.polygon([[o.w - 4, y + 5], [o.w - 8, y], [o.w - 10, y + 8]], "eye");
       }
+      // Pulsing hazard indicator at column apex to signal that this tall obstacle blocks the entire track
+      const beaconAlpha = 0.6 + Math.abs(Math.sin(time * 6)) * 0.4;
+      c.save();
+      c.fillStyle = `rgba(239, 68, 68, ${beaconAlpha})`;
+      c.shadowColor = "#ef4444";
+      c.shadowBlur = 10;
+      c.beginPath();
+      c.arc(middle, -o.h - 5, 4.5, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
     } else {
       this.polygon([[0, 0], [o.w / 2, -o.h], [o.w, 0]], "spike", "scarf", 1.5);
       this.polygon([[o.w / 2, -o.h + 3], [o.w / 2, -2], [o.w - 2, -2]], "scarf");
@@ -108,12 +118,54 @@ export class GameArt {
   }
   pickup(p: Pickup, x: number, ground: number, time: number) {
     const c = this.ctx;
-    c.save(); c.translate(x, (p.side === 1 ? ground : ground + TRACK_H) - p.side * p.offset);
-    const pulse = 1 + Math.sin(time * 4) * .025; c.scale(pulse, pulse);
-    this.circle(0, 0, 14, "metal-light", "eye", 1.5);
-    this.circle(0, 0, 11, "power", "power-light", 1.5);
-    if (p.kind === "shield") this.polygon([[-6, -6], [0, -4], [6, -6], [6, 1], [3, 6], [0, 8], [-3, 6], [-6, 1]], "eye");
-    else for (const dx of [-5, 1]) this.polygon([[dx - 3, -7], [dx + 4, 0], [dx - 3, 7], [dx, 7], [dx + 7, 0], [dx, -7]], "eye");
+    c.save();
+    c.translate(x, (p.side === 1 ? ground : ground + TRACK_H) - p.side * p.offset);
+    const pulse = 1 + Math.sin(time * 5) * 0.08;
+    c.scale(pulse, pulse);
+
+    if (p.kind === "star") {
+      c.rotate(time * 1.6);
+      const drawStarPath = (spikes = 5, outerR = 12, innerR = 5.5) => {
+        let rot = (Math.PI / 2) * 3;
+        const step = Math.PI / spikes;
+        c.beginPath();
+        c.moveTo(0, -outerR);
+        for (let i = 0; i < spikes; i++) {
+          c.lineTo(Math.cos(rot) * outerR, Math.sin(rot) * outerR);
+          rot += step;
+          c.lineTo(Math.cos(rot) * innerR, Math.sin(rot) * innerR);
+          rot += step;
+        }
+        c.closePath();
+      };
+
+      // Glowing outer halo
+      c.save();
+      c.shadowColor = "#38bdf8";
+      c.shadowBlur = 14;
+      c.fillStyle = "#0284c7";
+      drawStarPath(5, 14, 6.5);
+      c.fill();
+      c.restore();
+
+      // Main cyan star body
+      c.fillStyle = "#38bdf8";
+      c.strokeStyle = "#bae6fd";
+      c.lineWidth = 1.6;
+      drawStarPath(5, 12, 5.5);
+      c.fill();
+      c.stroke();
+
+      // Shiny core
+      c.fillStyle = "#ffffff";
+      drawStarPath(5, 5, 2.2);
+      c.fill();
+    } else {
+      this.circle(0, 0, 14, "metal-light", "eye", 1.5);
+      this.circle(0, 0, 11, "power", "power-light", 1.5);
+      if (p.kind === "shield") this.polygon([[-6, -6], [0, -4], [6, -6], [6, 1], [3, 6], [0, 8], [-3, 6], [-6, 1]], "eye");
+      else for (const dx of [-5, 1]) this.polygon([[dx - 3, -7], [dx + 4, 0], [dx - 3, 7], [dx, 7], [dx + 7, 0], [dx, -7]], "eye");
+    }
     c.restore();
   }
   ninja(x: number, ground: number, runner: Runner, powers: Powers, time: number, dead = false) {

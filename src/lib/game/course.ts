@@ -16,7 +16,7 @@ export function obstacleGap(worldX: number, random: number): number {
   return futureSpeed * (3.5 + random);
 }
 
-export const FIRST_PICKUP_X = 1800;
+export const FIRST_PICKUP_X = 400;
 export function pickupGap(random: number): number {
   return 3000 + random * 1500;
 }
