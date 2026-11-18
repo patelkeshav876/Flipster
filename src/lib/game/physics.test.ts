@@ -41,10 +41,11 @@ describe("reference Flipster controls", () => {
     assert.equal(hitsObstacle(flipRunner(standing), 70, blade), true);
     assert.equal(hitsObstacle({ ...standing, offset: 35 }, 70, blade), false);
   });
-  test("a hanging mace collides with its ball, not the empty space above it", () => {
-    const mace: Obstacle = { x: 70, w: 64, h: 100, side: 1, tall: false, kind: "mace" };
-    assert.equal(hitsObstacle(standing, 70, mace), false);
-    assert.equal(hitsObstacle({ ...standing, offset: 50 }, 70, mace), true);
-    assert.equal(hitsObstacle(flipRunner(standing), 70, mace), false);
+  test("a swinging mace collides with runners on the same side and can be avoided by flipping", () => {
+    const mace: Obstacle = { x: 70, w: 48, h: 65, side: 1, tall: false, kind: "mace" };
+    // On the same side, a runner near the base or ball hits it
+    assert.equal(hitsObstacle(standing, 75, mace, 0), true);
+    // Flipping to the opposite track avoids the obstacle completely
+    assert.equal(hitsObstacle(flipRunner(standing), 75, mace, 0), false);
   });
 });

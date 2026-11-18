@@ -5,22 +5,22 @@ import type { Pickup, Powers } from "./powers";
 // ax: horizontal body-center anchor for drift-free alignment.
 // ay: vertical ground-contact foot baseline (y = 240.00 for all frames).
 const FRAME_ANCHORS: { ax: number; ay: number }[] = [
-  /*  0 */ { ax: 127.46, ay: 240.00 },
-  /*  1 */ { ax: 129.96, ay: 240.00 },
-  /*  2 */ { ax: 126.79, ay: 240.00 },
-  /*  3 */ { ax: 122.94, ay: 240.00 },
-  /*  4 */ { ax: 126.26, ay: 240.00 },
-  /*  5 */ { ax: 127.94, ay: 240.00 },
-  /*  6 */ { ax: 123.73, ay: 240.00 },
-  /*  7 */ { ax: 121.32, ay: 240.00 },
-  /*  8 */ { ax: 128.16, ay: 240.00 },
-  /*  9 */ { ax: 128.38, ay: 240.00 },
-  /* 10 */ { ax: 128.42, ay: 240.00 },
-  /* 11 */ { ax: 128.26, ay: 240.00 },
-  /* 12 */ { ax: 128.30, ay: 240.00 },
-  /* 13 */ { ax: 128.20, ay: 240.00 },
-  /* 14 */ { ax: 127.77, ay: 240.00 },
-  /* 15 */ { ax: 128.23, ay: 240.00 },
+  /*  0 */ { ax: 127.47, ay: 240.00 },
+  /*  1 */ { ax: 129.98, ay: 240.00 },
+  /*  2 */ { ax: 126.78, ay: 240.00 },
+  /*  3 */ { ax: 122.98, ay: 240.00 },
+  /*  4 */ { ax: 126.29, ay: 240.00 },
+  /*  5 */ { ax: 128.00, ay: 240.00 },
+  /*  6 */ { ax: 123.76, ay: 240.00 },
+  /*  7 */ { ax: 121.34, ay: 240.00 },
+  /*  8 */ { ax: 129.98, ay: 240.00 },
+  /*  9 */ { ax: 126.78, ay: 240.00 },
+  /* 10 */ { ax: 122.98, ay: 240.00 },
+  /* 11 */ { ax: 127.47, ay: 240.00 },
+  /* 12 */ { ax: 126.78, ay: 240.00 },
+  /* 13 */ { ax: 122.98, ay: 240.00 },
+  /* 14 */ { ax: 129.98, ay: 240.00 },
+  /* 15 */ { ax: 114.42, ay: 240.00 },
 ];
 
 // 8-frame running cycle using all 8 running frames from Sheet 1 (frames 0-7).
@@ -62,25 +62,56 @@ export class GameArt {
       }
       this.circle(0, 0, 9, "metal", "metal-dark"); this.circle(0, 0, 3.5, "wood-light", "metal-dark");
     } else if (kind === "mace") {
-      const r = o.w / 2, cy = -o.h + r;
-      // A linked diagonal chain from the track to the ball.
-      c.strokeStyle = this.color("metal-dark"); c.lineWidth = 5;
-      c.beginPath(); c.moveTo(r, cy); c.lineTo(r - 55, -8); c.stroke();
-      for (let i = 0; i < 7; i++) {
-        const t = i / 7;
-        c.save(); c.translate(r - t * 55, cy + t * (-8 - cy)); c.rotate(.55);
-        c.strokeStyle = this.color("metal-light"); c.lineWidth = 2;
-        c.strokeRect(-3, -5, 6, 10); c.restore();
+      const swing = Math.sin(time * 3.2 + o.x * 0.04);
+      const shiftX = swing * 28;
+      const angle = 0.55 + swing * 0.70;
+      const chainLen = 52;
+      const r = o.w / 2;
+      
+      const baseX = r - 20 + shiftX;
+      const baseY = -8;
+      
+      const ballX = baseX + Math.cos(angle) * chainLen;
+      const ballY = baseY - Math.sin(angle) * chainLen;
+      
+      // Draw base block on the track
+      c.fillStyle = this.color("metal");
+      c.fillRect(baseX - 8, -13, 16, 13);
+      c.strokeStyle = this.color("metal-dark");
+      c.lineWidth = 2;
+      c.strokeRect(baseX - 8, -13, 16, 13);
+      
+      // Draw chain links from base to ball
+      const dx = ballX - baseX;
+      const dy = ballY - baseY;
+      const links = 7;
+      for (let i = 0; i <= links; i++) {
+        const t = i / links;
+        const lx = baseX + dx * t;
+        const ly = baseY + dy * t;
+        c.save();
+        c.translate(lx, ly);
+        c.rotate(Math.atan2(dy, dx) + Math.PI / 2);
+        c.strokeStyle = this.color("metal-light");
+        c.lineWidth = 2;
+        c.strokeRect(-3, -5, 6, 10);
+        c.restore();
       }
-      c.fillStyle = this.color("metal"); c.fillRect(r - 62, -13, 14, 10);
-      c.strokeStyle = this.color("metal-dark"); c.lineWidth = 2; c.strokeRect(r - 62, -13, 14, 10);
+      
+      // Draw rotating spiked mace ball
+      c.save();
+      c.translate(ballX, ballY);
+      c.rotate(time * 4.0);
       for (let i = 0; i < 16; i++) {
-        c.save(); c.translate(r, cy); c.rotate(i * Math.PI / 8);
-        this.polygon([[-3, -r + 5], [0, -r], [3, -r + 5]], "metal-light", "metal-dark"); c.restore();
+        c.save();
+        c.rotate(i * Math.PI / 8);
+        this.polygon([[-3, -r + 5], [0, -r], [3, -r + 5]], "metal-light", "metal-dark");
+        c.restore();
       }
-      this.circle(r, cy, r - 2, "metal", "metal-dark", 2);
-      for (const [dx, dy] of [[-8, -8], [6, -10], [12, 2], [-7, 7], [3, 10], [0, 0]] as [number, number][])
-        this.polygon([[r + dx - 3, cy + dy + 3], [r + dx, cy + dy - 6], [r + dx + 4, cy + dy + 2]], "metal-light", "metal-dark", .8);
+      this.circle(0, 0, r - 2, "metal", "metal-dark", 2);
+      for (const [pdx, pdy] of [[-8, -8], [6, -10], [12, 2], [-7, 7], [3, 10], [0, 0]] as [number, number][])
+        this.polygon([[pdx - 3, pdy + 3], [pdx, pdy - 6], [pdx + 4, pdy + 2]], "metal-light", "metal-dark", .8);
+      c.restore();
     } else if (kind === "laser") {
       c.fillStyle = this.color("scarf"); c.fillRect(o.w / 2 - 5, -o.h, 10, o.h);
       c.fillStyle = this.color("wood-light"); c.fillRect(o.w / 2 - 2.5, -o.h, 5, o.h);

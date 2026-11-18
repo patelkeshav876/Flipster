@@ -132,7 +132,7 @@ export class GameEngine {
     });
     this.obstacles = this.obstacles.filter(o => o.x + o.w > this.distance - 100);
     for (const obstacle of this.obstacles) {
-      if (hitsObstacle(this.runner, this.distance + PLAYER_X, obstacle)) {
+      if (hitsObstacle(this.runner, this.distance + PLAYER_X, obstacle, this.time)) {
         const hit = absorbHit(this.powers);
         if (hit.survives) {
           this.powers = hit.powers;
