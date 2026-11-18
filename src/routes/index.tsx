@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Users } from "lucide-react";
+import { ArrowRight, Users, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerId, makeCode } from "@/lib/game/player-id";
 
@@ -87,27 +87,37 @@ function Home() {
       </div>
 
       <section className="flipster-cover-panel" aria-label="Flipster game menu">
-        <header className="flipster-cover-header">
-          <div className="flipster-cover-mark"><NinjaMark /></div>
-          <p className="flipster-cover-kicker">READY TO PLAY</p>
-          <h1 className="flipster-cover-title">FLIPSTER</h1>
-          <p className="flipster-cover-tagline">JUMP · FLIP · RACE</p>
-        </header>
+        {/* Center avatar card */}
+        <div className="flex flex-col items-center">
+          <div className="flipster-cover-avatar mb-3">
+            <NinjaAvatar />
+          </div>
+          <p className="font-mono text-xs font-bold tracking-widest text-[#1e3a5f] uppercase">
+            YOU'RE READY TO PLAY
+          </p>
+          <h1 className="flipster-cover-title mt-1 tracking-wider text-[#1e3a5f] drop-shadow-[0_2px_0_rgba(255,255,255,0.7)]">
+            FL!PSTER
+          </h1>
+          <p className="font-mono text-[10px] font-bold tracking-wide text-[#2a4f7a] uppercase mt-2 mb-6">
+            PLAY UNLIMITED TIMES TILL THE TOURNAMENT ENDS
+          </p>
+        </div>
 
         <div className="flipster-cover-actions">
           <Button
             onClick={() => navigate({ to: "/solo" })}
-            className="h-12 w-full rounded-none border-2 border-foreground bg-foreground font-display text-base tracking-[0.16em] text-background hover:bg-foreground/90"
+            className="h-14 w-full rounded-xl border-2 border-[#1e3a5f] bg-[#1e3a5f] font-display text-xl font-bold tracking-[0.16em] text-white shadow-lg transition-transform active:scale-95 hover:bg-[#2a4f7a]"
           >
-            <Play fill="currentColor" /> PLAY SOLO
+            <Play fill="currentColor" className="mr-2 size-5" /> PLAY
           </Button>
+
           <Button
             variant="outline"
             onClick={createMatch}
             disabled={busy}
-            className="h-12 w-full rounded-none border-2 border-foreground bg-transparent font-display text-base tracking-[0.12em] text-foreground hover:bg-background/35"
+            className="h-12 w-full rounded-xl border-2 border-[#1e3a5f] bg-white/70 font-display text-sm font-bold tracking-[0.12em] text-[#1e3a5f] hover:bg-white"
           >
-            <Users /> CREATE MATCH
+            <Users className="mr-2 size-4" /> CREATE MATCH
           </Button>
 
           <form onSubmit={joinMatch} className="flipster-join-form">
@@ -127,7 +137,7 @@ function Home() {
               variant="outline"
               disabled={busy || code.length < 4}
               aria-label="Join match"
-              className="h-12 w-12 shrink-0 rounded-none border-2 border-foreground bg-transparent text-foreground hover:bg-background/35"
+              className="h-12 w-12 shrink-0 rounded-xl border-2 border-[#1e3a5f] bg-white/70 text-[#1e3a5f] hover:bg-white"
             >
               <ArrowRight />
             </Button>
@@ -140,17 +150,33 @@ function Home() {
   );
 }
 
-function NinjaMark() {
+function NinjaAvatar() {
   return (
-    <svg viewBox="0 0 88 88" className="h-full w-full" aria-hidden="true">
-      <rect x="5" y="5" width="78" height="78" rx="13" className="cover-mark-frame" />
-      <path d="M17 26c8-9 21-12 32-7l7 5-2 23-10 9-21-1-7-9z" className="cover-mark-ninja" />
-      <path d="M49 30c-6-3-14-2-18 3 5 2 11 2 18 0z" className="cover-mark-eye" />
-      <path d="m25 51 23 1-3 13-12 5-10-7z" className="cover-mark-ninja" />
-      <path d="m23 55 27-4 1 5-27 5z" className="cover-mark-scarf" />
-      <path d="m34 67-7 8 12-3 4-7zm10-1 2 9 8-8-4-5z" className="cover-mark-ninja" />
-      <path d="m57 70 10-18 10 18z" className="cover-mark-hazard" />
-      <path d="m67 70 2-8 3 8z" className="cover-mark-highlight" />
+    <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden="true">
+      {/* Outer rounded card frame */}
+      <rect x="2" y="2" width="96" height="96" rx="20" fill="#58bad6" stroke="#ffffff" strokeWidth="4" />
+      {/* Sky inside */}
+      <rect x="6" y="6" width="88" height="88" rx="16" fill="#67c5de" />
+      {/* Little clouds */}
+      <ellipse cx="28" cy="38" rx="8" ry="3" fill="rgba(255,255,255,0.7)" />
+      <ellipse cx="72" cy="28" rx="11" ry="4" fill="rgba(255,255,255,0.7)" />
+      {/* Ground strip */}
+      <rect x="6" y="70" width="88" height="24" fill="#52391e" />
+      <rect x="6" y="70" width="88" height="6" fill="#75ba2d" />
+      {/* Red cone obstacle */}
+      <polygon points="66,70 54,70 60,46" fill="#c43828" stroke="#8a1f12" strokeWidth="1.5" />
+      <polygon points="60,70 54,70 60,46" fill="#a82d1f" />
+      {/* Jumping ninja character */}
+      {/* Body */}
+      <path d="M26 34 C26 28, 38 28, 42 32 C46 36, 44 48, 44 54 C44 58, 48 58, 52 56 C53 58, 50 63, 44 63 C36 63, 30 63, 26 56 C24 53, 20 54, 18 57 C16 54, 18 48, 22 46 C26 44, 26 38, 26 34 Z" fill="#141414" />
+      {/* Large white crescent eye */}
+      <ellipse cx="37" cy="38" rx="6.5" ry="8.5" fill="#ffffff" />
+      <ellipse cx="39" cy="39" rx="3" ry="5.5" fill="#141414" />
+      {/* Red scarf */}
+      <rect x="23" y="47" width="22" height="4.5" rx="2" fill="#e02424" />
+      {/* Scarf tails */}
+      <path d="M23 48 C16 48, 14 52, 12 55 C15 54, 19 51, 23 50 Z" fill="#e02424" />
+      <path d="M23 49 C18 52, 14 57, 13 60 C16 57, 20 53, 23 52 Z" fill="#e02424" />
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { GameEngine } from "@/lib/game/engine";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, Shield, ChevronsRight, Smartphone } from "lucide-react";
@@ -22,17 +22,26 @@ export function GameScreen({
   spectator: boolean;
   solo?: boolean;
   onScore: (score: number) => void;
-  onDeath: (score: number) => void;
+  onDeath: (score: number, stats?: { distance: number; stars: number }) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [localScore, setLocalScore] = useState(0);
+  const [distance, setDistance] = useState(0);
   const [dead, setDead] = useState(false);
   const [paused, setPaused] = useState(false);
   const [portraitMobile, setPortraitMobile] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const [powers, setPowers] = useState<{ shield: number; speed: number; stars?: number }>({ shield: 0, speed: 0, stars: 0 });
   const callbacks = useRef({ onScore, onDeath });
   callbacks.current = { onScore, onDeath };
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   useEffect(() => {
     const telegram = window.Telegram?.WebApp;
@@ -79,13 +88,14 @@ export function GameScreen({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || spectator) return;
+    if (!canvas || spectator || countdown > 0) return;
     let lastSent = 0;
     const engine = new GameEngine({
       canvas,
       seed,
-      onUpdate: ({ score, powers: activePowers }) => {
+      onUpdate: ({ score, powers: activePowers, distance: dist }) => {
         setLocalScore(score);
+        setDistance(dist);
         setPowers(activePowers);
         const now = performance.now();
         if (now - lastSent > 400) {
@@ -93,10 +103,10 @@ export function GameScreen({
           callbacks.current.onScore(score);
         }
       },
-      onDeath: (score) => {
+      onDeath: (score, stats) => {
         setDead(true);
         setLocalScore(score);
-        callbacks.current.onDeath(score);
+        callbacks.current.onDeath(score, stats);
       },
     });
     engineRef.current = engine;
@@ -109,7 +119,7 @@ export function GameScreen({
       engineRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, spectator]);
+  }, [seed, spectator, countdown]);
 
   useEffect(() => {
     engineRef.current?.setPaused(paused || portraitMobile);
@@ -117,6 +127,7 @@ export function GameScreen({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (countdown > 0) return;
       if (e.code === "Space" || e.code === "ArrowUp") {
         e.preventDefault();
         if (!e.repeat) engineRef.current?.jump();
@@ -127,7 +138,17 @@ export function GameScreen({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [countdown]);
+
+  const handleFlip = useCallback(() => {
+    if (countdown > 0) return;
+    engineRef.current?.flip();
+  }, [countdown]);
+
+  const handleJump = useCallback(() => {
+    if (countdown > 0) return;
+    engineRef.current?.jump();
+  }, [countdown]);
 
   return (
     <main
@@ -135,11 +156,21 @@ export function GameScreen({
     >
       <canvas ref={canvasRef} aria-label="Flipster game: left side flips, right side jumps" className="block h-full w-full" onPointerDown={(event) => {
         event.preventDefault();
-        if (dead || paused || portraitMobile) return;
+        if (dead || paused || portraitMobile || countdown > 0) return;
         const rect = event.currentTarget.getBoundingClientRect();
-        if (event.clientX - rect.left < rect.width / 2) engineRef.current?.flip();
-        else engineRef.current?.jump();
+        if (event.clientX - rect.left < rect.width / 2) handleFlip();
+        else handleJump();
       }} />
+
+      {/* Countdown overlay */}
+      {countdown > 0 && !portraitMobile && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60">
+          <div className="flex flex-col items-center gap-3">
+            <p className="font-mono text-sm text-muted-foreground tracking-widest">GET READY</p>
+            <p className="font-display text-8xl font-black text-foreground animate-pulse">{countdown}</p>
+          </div>
+        </div>
+      )}
 
       {portraitMobile && (
         <div role="status" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5 bg-background text-center text-foreground">
@@ -171,7 +202,7 @@ export function GameScreen({
         )}
         <ScoreBlock label={solo ? "SCORE" : "RIVAL"} value={solo ? localScore : theirScore} align="right" dim={!solo && !theirAlive} />
       </div>
-      {solo && !dead && <Button variant="ghost" size="icon" aria-label={paused ? "Resume game" : "Pause game"} className="absolute left-4 top-[calc(env(safe-area-inset-top)+14px)] size-12 text-game-ninja hover:bg-game-eye/25 [&_svg]:size-8" onClick={() => {
+      {solo && !dead && countdown <= 0 && <Button variant="ghost" size="icon" aria-label={paused ? "Resume game" : "Pause game"} className="absolute left-4 top-[calc(env(safe-area-inset-top)+14px)] size-12 text-game-ninja hover:bg-game-eye/25 [&_svg]:size-8" onClick={() => {
         engineRef.current?.setPaused(!paused); setPaused(!paused);
       }}>{paused ? <Play fill="currentColor" /> : <Pause fill="currentColor" />}</Button>}
       <div className="pointer-events-none absolute inset-x-0 top-24 flex justify-center gap-5 text-game-ninja">
@@ -192,17 +223,27 @@ export function GameScreen({
         </div>
       )}
 
-      {!dead && myAlive && !spectator && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between px-7 pb-[calc(env(safe-area-inset-bottom)+24px)]">
+      {/* Touch control buttons — elevated with clean margin above bottom border lines */}
+      {!dead && myAlive && !spectator && countdown <= 0 && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-between px-8 pb-[calc(env(safe-area-inset-bottom)+12px)]">
           <div className="pointer-events-auto flex flex-col items-center gap-1.5">
-            <Button aria-label="Flip gravity" title="Flip" disabled={dead} onPointerDown={(event) => { event.preventDefault(); engineRef.current?.flip(); }} onClick={(event) => { if (event.detail === 0) engineRef.current?.flip(); }} className="game-control-button">
-              <span className="game-control-face"><svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true"><path d="M4 15 13 5l9 10h-6v25h-6V15zM24 8h6v25h6L27 43l-9-10h6z" /><path d="M19 8h2v33h-2z" /></svg></span>
+            <Button aria-label="Flip gravity" title="Flip" disabled={dead} onPointerDown={(event) => { event.preventDefault(); handleFlip(); }} onClick={(event) => { if (event.detail === 0) handleFlip(); }} className="game-control-button">
+              <span className="game-control-face">
+                <svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true">
+                  <path d="M5 18 L13 7 L21 18 H16 V38 H10 V18 Z" />
+                  <path d="M24 10 H30 V30 H35 L27 41 L19 30 H24 Z" />
+                </svg>
+              </span>
             </Button>
             <span className="font-display text-xs font-black tracking-widest text-game-control-highlight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">FLIP</span>
           </div>
           <div className="pointer-events-auto flex flex-col items-center gap-1.5">
-            <Button aria-label="Jump" title="Jump" disabled={dead} onPointerDown={(event) => { event.preventDefault(); engineRef.current?.jump(); }} onClick={(event) => { if (event.detail === 0) engineRef.current?.jump(); }} className="game-control-button">
-              <span className="game-control-face"><svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true"><path d="m20 4 13 15h-9v25h-8V19H7z" /></svg></span>
+            <Button aria-label="Jump" title="Jump" disabled={dead} onPointerDown={(event) => { event.preventDefault(); handleJump(); }} onClick={(event) => { if (event.detail === 0) handleJump(); }} className="game-control-button">
+              <span className="game-control-face">
+                <svg className="game-control-symbol" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true">
+                  <path d="m20 5 13 15h-8v23h-10V20H7z" />
+                </svg>
+              </span>
             </Button>
             <span className="font-display text-xs font-black tracking-widest text-game-control-highlight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">JUMP</span>
           </div>
@@ -234,4 +275,3 @@ export function ScoreBlock({
     </div>
   );
 }
-

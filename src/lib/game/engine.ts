@@ -8,8 +8,8 @@ const PLAYER_X = 70;
 const START_SPEED = 230;
 const SPEED_GAIN = 5.5;
 const MAX_SPEED = 560;
-export type EngineState = { score: number; alive: boolean; speed: number; powers: Powers };
-export type EngineOptions = { canvas: HTMLCanvasElement; seed: number; onUpdate: (state: EngineState) => void; onDeath: (score: number) => void };
+export type EngineState = { score: number; alive: boolean; speed: number; powers: Powers; distance: number };
+export type EngineOptions = { canvas: HTMLCanvasElement; seed: number; onUpdate: (state: EngineState) => void; onDeath: (score: number, stats?: { distance: number; stars: number }) => void };
 
 export class GameEngine {
   private canvas: HTMLCanvasElement;
@@ -41,6 +41,10 @@ export class GameEngine {
   private nextPickupX = FIRST_PICKUP_X;
   private powers: Powers = { shield: 0, speed: 0, stars: 0 };
   private paused = false;
+  private smokeParticles: { x: number; y: number; vx: number; vy: number; r: number; alpha: number; life: number }[] = [];
+  private deathTime = 0;
+  private deathX = 0;
+  private deathY = 0;
 
   constructor(opts: EngineOptions) {
     this.canvas = opts.canvas;
@@ -136,8 +140,27 @@ export class GameEngine {
           break;
         }
         this.alive = false;
+        // Spawn black smoke particles at the character's position
+        const anchor = this.runner.side === 1 ? this.groundY : this.groundY + TRACK_H;
+        this.deathX = PLAYER_X + 7;
+        this.deathY = anchor - this.runner.side * (this.runner.offset + 10);
+        this.deathTime = 0;
+        for (let i = 0; i < 18; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 30 + Math.random() * 80;
+          this.smokeParticles.push({
+            x: this.deathX + (Math.random() - 0.5) * 12,
+            y: this.deathY + (Math.random() - 0.5) * 12,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 30,
+            r: 5 + Math.random() * 8,
+            alpha: 0.85 + Math.random() * 0.15,
+            life: 0.5 + Math.random() * 0.6,
+          });
+        }
         this.stop();
-        this.onDeath(this.score);
+        // Delay onDeath callback so smoke plays visually
+        this._runDeathAnimation();
         break;
       }
     }
@@ -201,14 +224,65 @@ export class GameEngine {
       if (x > -30 && x < vw + 30) this.art.pickup(pickup, x, groundY, this.time);
     }
     const anchor = this.runner.side === 1 ? groundY : groundY + TRACK_H;
-    this.art.ninja(PLAYER_X, anchor, this.runner, this.powers, this.time, !this.alive);
+    // During death animation, fade out character and draw smoke
+    if (!this.alive && this.deathTime < 1.2) {
+      // Don't draw character after a short delay (it disappears into smoke)
+      if (this.deathTime < 0.15) {
+        ctx.globalAlpha = Math.max(0, 1 - this.deathTime / 0.15);
+        this.art.ninja(PLAYER_X, anchor, this.runner, this.powers, this.time, true);
+        ctx.globalAlpha = 1;
+      }
+      // Draw smoke particles
+      for (const p of this.smokeParticles) {
+        if (p.alpha <= 0) continue;
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = `rgba(30, 30, 30, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        // Dark gray inner
+        ctx.fillStyle = `rgba(60, 60, 60, ${p.alpha * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    } else if (this.alive) {
+      this.art.ninja(PLAYER_X, anchor, this.runner, this.powers, this.time, false);
+    }
+  }
+  private _runDeathAnimation() {
+    let lastT = performance.now();
+    const animate = (now: number) => {
+      const dt = Math.min((now - lastT) / 1000, 0.05);
+      lastT = now;
+      this.deathTime += dt;
+      // Update smoke particles
+      for (const p of this.smokeParticles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 15 * dt; // slight gravity on smoke
+        p.r += 6 * dt; // expand
+        p.alpha -= dt / p.life;
+        if (p.alpha < 0) p.alpha = 0;
+      }
+      this.draw();
+      this.onUpdate({ score: this.score, alive: false, speed: this.speed, powers: this.powers, distance: this.distance });
+      if (this.deathTime < 1.0) {
+        requestAnimationFrame(animate);
+      } else {
+        this.onDeath(this.score, { distance: Math.floor(this.distance / 10), stars: this.powers.stars ?? 0 });
+      }
+    };
+    requestAnimationFrame(animate);
   }
   private loop = (now: number) => {
     if (!this.running) return;
     this.acc += this.paused ? 0 : Math.min((now-this.last)/1000,0.25); this.last = now;
     const fixed = 1/120;
     while (this.acc >= fixed) { this.step(fixed); this.acc -= fixed; if (!this.alive) break; }
-    this.draw(); this.onUpdate({score:this.score, alive:this.alive,speed:this.speed, powers: this.powers});
+    this.draw(); this.onUpdate({score:this.score, alive:this.alive,speed:this.speed, powers: this.powers, distance: this.distance});
     if (this.alive) this.raf = requestAnimationFrame(this.loop);
   };
 }

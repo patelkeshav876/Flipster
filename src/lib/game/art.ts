@@ -5,22 +5,22 @@ import type { Pickup, Powers } from "./powers";
 // ax: horizontal body-center anchor for drift-free alignment.
 // ay: vertical ground-contact foot baseline (y = 240.00 for all frames).
 const FRAME_ANCHORS: { ax: number; ay: number }[] = [
-  /*  0 */ { ax: 127.45, ay: 240.00 },
-  /*  1 */ { ax: 130.00, ay: 240.00 },
-  /*  2 */ { ax: 126.60, ay: 240.00 },
-  /*  3 */ { ax: 122.43, ay: 240.00 },
-  /*  4 */ { ax: 126.11, ay: 240.00 },
-  /*  5 */ { ax: 127.97, ay: 240.00 },
-  /*  6 */ { ax: 121.99, ay: 240.00 },
-  /*  7 */ { ax: 121.69, ay: 240.00 },
-  /*  8 */ { ax: 127.63, ay: 240.00 },
-  /*  9 */ { ax: 127.52, ay: 240.00 },
-  /* 10 */ { ax: 127.56, ay: 240.00 },
-  /* 11 */ { ax: 128.08, ay: 240.00 },
-  /* 12 */ { ax: 128.44, ay: 240.00 },
-  /* 13 */ { ax: 128.11, ay: 240.00 },
-  /* 14 */ { ax: 127.80, ay: 240.00 },
-  /* 15 */ { ax: 127.91, ay: 240.00 },
+  /*  0 */ { ax: 127.29, ay: 240.00 },
+  /*  1 */ { ax: 129.85, ay: 240.00 },
+  /*  2 */ { ax: 126.38, ay: 240.00 },
+  /*  3 */ { ax: 122.17, ay: 240.00 },
+  /*  4 */ { ax: 125.78, ay: 240.00 },
+  /*  5 */ { ax: 127.58, ay: 240.00 },
+  /*  6 */ { ax: 121.74, ay: 240.00 },
+  /*  7 */ { ax: 121.41, ay: 240.00 },
+  /*  8 */ { ax: 128.51, ay: 240.00 },
+  /*  9 */ { ax: 128.20, ay: 240.00 },
+  /* 10 */ { ax: 128.28, ay: 240.00 },
+  /* 11 */ { ax: 127.91, ay: 240.00 },
+  /* 12 */ { ax: 128.13, ay: 240.00 },
+  /* 13 */ { ax: 127.90, ay: 240.00 },
+  /* 14 */ { ax: 127.71, ay: 240.00 },
+  /* 15 */ { ax: 127.70, ay: 240.00 },
 ];
 
 // 8-frame running cycle using all 8 running frames from Sheet 1 (frames 0-7).
@@ -217,6 +217,8 @@ export class GameArt {
       const flightStretch = runner.grounded ? 1 : 1 + Math.sin(jumpPhase * Math.PI) * 0.08;
       const destH = 256 * scale * flightStretch;
 
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = "high";
       c.drawImage(
         this.runnerImage,
         frameX, frameY, 256, 256,
