@@ -87,10 +87,14 @@ function Home() {
       </div>
 
       <section className="flipster-cover-panel" aria-label="Flipster game menu">
-        {/* Center avatar card */}
+        {/* Center avatar badge */}
         <div className="flex flex-col items-center">
           <div className="flipster-cover-avatar mb-3">
-            <NinjaAvatar />
+            <img
+              src="/flipster-badge.png"
+              alt="Flipster"
+              className="h-full w-full object-contain select-none"
+            />
           </div>
           <p className="font-mono text-xs font-bold tracking-widest text-[#1e3a5f] uppercase">
             YOU'RE READY TO PLAY
