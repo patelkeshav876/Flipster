@@ -62,55 +62,68 @@ export class GameArt {
       }
       this.circle(0, 0, 9, "metal", "metal-dark"); this.circle(0, 0, 3.5, "wood-light", "metal-dark");
     } else if (kind === "mace") {
-      const swing = Math.sin(time * 3.2 + o.x * 0.04);
-      const shiftX = swing * 28;
-      const angle = 0.55 + swing * 0.70;
-      const chainLen = 52;
-      const r = o.w / 2;
+      const cx = o.w / 2;
+      const swingAngle = Math.sin(time * 3.6 + o.x * 0.05) * 0.82;
+      const chainLen = 46;
+      const r = 18;
       
-      const baseX = r - 20 + shiftX;
-      const baseY = -8;
+      const ballX = cx + Math.sin(swingAngle) * chainLen;
+      const ballY = -o.h + Math.cos(swingAngle) * chainLen;
       
-      const ballX = baseX + Math.cos(angle) * chainLen;
-      const ballY = baseY - Math.sin(angle) * chainLen;
-      
-      // Draw base block on the track
+      // 1. Sturdy iron mounting frame: track base mount + vertical post rising to top pivot
+      c.fillStyle = this.color("metal-dark");
+      c.fillRect(cx - 10, -6, 20, 6);
       c.fillStyle = this.color("metal");
-      c.fillRect(baseX - 8, -13, 16, 13);
-      c.strokeStyle = this.color("metal-dark");
-      c.lineWidth = 2;
-      c.strokeRect(baseX - 8, -13, 16, 13);
+      c.fillRect(cx - 7, -9, 14, 4);
       
-      // Draw chain links from base to ball
-      const dx = ballX - baseX;
-      const dy = ballY - baseY;
+      // Upright support girder
+      c.fillStyle = this.color("metal-dark");
+      c.fillRect(cx - 4, -o.h, 8, o.h - 9);
+      c.fillStyle = this.color("metal");
+      c.fillRect(cx - 2, -o.h, 4, o.h - 9);
+      
+      // Top pivot arm bracket
+      c.fillStyle = this.color("metal");
+      c.fillRect(cx - 9, -o.h - 3, 18, 6);
+      c.strokeStyle = this.color("metal-dark");
+      c.lineWidth = 1.5;
+      c.strokeRect(cx - 9, -o.h - 3, 18, 6);
+      
+      // Top pivot bearing & bolt
+      this.circle(cx, -o.h, 6, "metal", "metal-dark", 1.5);
+      this.circle(cx, -o.h, 2.5, "metal-light", "metal-dark");
+      
+      // 2. Iron chain links swinging from pivot (cx, -o.h) down to ball (ballX, ballY)
+      const dx = ballX - cx;
+      const dy = ballY - (-o.h);
       const links = 7;
-      for (let i = 0; i <= links; i++) {
-        const t = i / links;
-        const lx = baseX + dx * t;
-        const ly = baseY + dy * t;
+      for (let i = 1; i <= links; i++) {
+        const t = i / (links + 1);
+        const lx = cx + dx * t;
+        const ly = -o.h + dy * t;
         c.save();
         c.translate(lx, ly);
         c.rotate(Math.atan2(dy, dx) + Math.PI / 2);
         c.strokeStyle = this.color("metal-light");
         c.lineWidth = 2;
-        c.strokeRect(-3, -5, 6, 10);
+        c.strokeRect(-2.5, -4.5, 5, 9);
         c.restore();
       }
       
-      // Draw rotating spiked mace ball
+      // 3. Rotating spiked mace ball
       c.save();
       c.translate(ballX, ballY);
-      c.rotate(time * 4.0);
+      c.rotate(time * 5.0);
       for (let i = 0; i < 16; i++) {
         c.save();
         c.rotate(i * Math.PI / 8);
-        this.polygon([[-3, -r + 5], [0, -r], [3, -r + 5]], "metal-light", "metal-dark");
+        this.polygon([[-3, -r + 5], [0, -r - 4], [3, -r + 5]], "metal-light", "metal-dark");
         c.restore();
       }
       this.circle(0, 0, r - 2, "metal", "metal-dark", 2);
-      for (const [pdx, pdy] of [[-8, -8], [6, -10], [12, 2], [-7, 7], [3, 10], [0, 0]] as [number, number][])
-        this.polygon([[pdx - 3, pdy + 3], [pdx, pdy - 6], [pdx + 4, pdy + 2]], "metal-light", "metal-dark", .8);
+      for (const [pdx, pdy] of [[-7, -7], [6, -9], [11, 2], [-6, 6], [3, 9], [0, 0]] as [number, number][]) {
+        this.polygon([[pdx - 3, pdy + 3], [pdx, pdy - 6], [pdx + 4, pdy + 2]], "metal-light", "metal-dark", 0.8);
+      }
       c.restore();
     } else if (kind === "laser") {
       c.fillStyle = this.color("scarf"); c.fillRect(o.w / 2 - 5, -o.h, 10, o.h);

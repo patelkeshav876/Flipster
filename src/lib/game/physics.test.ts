@@ -41,11 +41,17 @@ describe("reference Flipster controls", () => {
     assert.equal(hitsObstacle(flipRunner(standing), 70, blade), true);
     assert.equal(hitsObstacle({ ...standing, offset: 35 }, 70, blade), false);
   });
-  test("a swinging mace collides with runners on the same side and can be avoided by flipping", () => {
+  test("a swinging pendulum mace collides with runners on the same side and can be avoided by flipping", () => {
     const mace: Obstacle = { x: 70, w: 48, h: 65, side: 1, tall: false, kind: "mace" };
-    // On the same side, a runner near the base or ball hits it
-    assert.equal(hitsObstacle(standing, 75, mace, 0), true);
+    // At multiple points along the track, a grounded runner cannot pass through without hitting
+    assert.equal(hitsObstacle(standing, 70, mace, 0), true);
+    assert.equal(hitsObstacle(standing, 85, mace, 0), true);
+    assert.equal(hitsObstacle(standing, 94, mace, 0), true);
+    // Across different times during the pendulum swing, a runner on the same side at the post hits it
+    assert.equal(hitsObstacle(standing, 90, mace, 0.5), true);
+    assert.equal(hitsObstacle(standing, 90, mace, 1.0), true);
     // Flipping to the opposite track avoids the obstacle completely
-    assert.equal(hitsObstacle(flipRunner(standing), 75, mace, 0), false);
+    assert.equal(hitsObstacle(flipRunner(standing), 85, mace, 0), false);
+    assert.equal(hitsObstacle(flipRunner(standing), 94, mace, 0.5), false);
   });
 });
