@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerId } from "@/lib/game/player-id";
 import { GameScreen, ScoreBlock } from "@/components/game/game-screen";
 import { Button } from "@/components/ui/button";
+import { TournamentStore } from "@/lib/tournament/store";
 
 type Match = {
   id: string;
@@ -50,6 +51,25 @@ function MatchPage() {
   const [missing, setMissing] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [resultLocked, setResultLocked] = useState(true);
+  const recordedRef = useRef<string | null>(null);
+
+  // Record completed match to history
+  useEffect(() => {
+    if (match?.status !== "finished" || !me || !them || recordedRef.current === match.id) return;
+    recordedRef.current = match.id;
+    const myScore = me.score;
+    const theirScore = them.score;
+    const outcome = myScore === theirScore ? "draw" : myScore > theirScore ? "win" : "lose";
+    TournamentStore.recordMatch({
+      opponent: isP1 ? (match.p2_name || "Player 2") : (match.p1_name || "Player 1"),
+      myScore,
+      opponentScore: theirScore,
+      result: outcome,
+      coinsDelta: outcome === "win" ? 100 : outcome === "lose" ? -50 : 0,
+      date: "Just now",
+      game: "Flipster 1v1",
+    });
+  }, [match?.status, match?.id, me, them, isP1, match?.p1_name, match?.p2_name]);
 
   useEffect(() => {
     setPlayerId(getPlayerId());

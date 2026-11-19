@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { GameEngine } from "@/lib/game/engine";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, Shield, ChevronsRight, Smartphone } from "lucide-react";
+import { Pause, Play, Shield, ChevronsRight, Smartphone, ArrowLeft, LogOut } from "lucide-react";
 
 export function GameScreen({
   seed,
@@ -13,6 +13,7 @@ export function GameScreen({
   solo = false,
   onScore,
   onDeath,
+  onExit,
 }: {
   seed: number;
   myScore: number;
@@ -23,6 +24,7 @@ export function GameScreen({
   solo?: boolean;
   onScore: (score: number) => void;
   onDeath: (score: number, stats?: { distance: number; stars: number }) => void;
+  onExit?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
@@ -179,37 +181,102 @@ export function GameScreen({
         </div>
       )}
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-5 pt-[calc(env(safe-area-inset-top)+14px)] font-mono">
-        {solo ? (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-cyan-400 font-bold backdrop-blur-md border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.35)]">
-              <svg className="size-4 fill-cyan-400 drop-shadow-[0_0_6px_#38bdf8]" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              <span className="text-sm tracking-wider">{powers.stars ?? 0}</span>
-            </div>
+      {/* Top HUD with generous clearance avoiding Telegram header & phone notches */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-[max(env(safe-area-inset-top),38px)]">
+        {/* Left side: Back + Pause buttons in unified floating frosted pill */}
+        <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-md border border-white/20 shadow-lg">
+          <button
+            type="button"
+            onClick={() => {
+              if (onExit) onExit();
+              else window.location.href = "/";
+            }}
+            aria-label="Exit game"
+            className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-mono font-bold text-white/90 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>EXIT</span>
+          </button>
+          {solo && !dead && countdown <= 0 && (
+            <>
+              <span className="h-4 w-px bg-white/25" />
+              <button
+                type="button"
+                onClick={() => {
+                  engineRef.current?.setPaused(!paused);
+                  setPaused(!paused);
+                }}
+                aria-label={paused ? "Resume" : "Pause"}
+                className="flex items-center justify-center p-1 text-white/90 hover:text-white transition-colors"
+              >
+                {paused ? <Play className="size-3.5 fill-current" /> : <Pause className="size-3.5 fill-current" />}
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Right side: Distance + Star Coins in unified floating frosted pill */}
+        <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-black/60 px-4 py-1.5 backdrop-blur-md border border-white/20 shadow-lg font-mono">
+          {/* Distance meter (matching Image 2 bold '722 M') */}
+          <div className="flex items-baseline gap-1 font-display font-black tracking-wider text-white">
+            <span className="text-lg tabular-nums">{Math.floor(distance || localScore * 0.8)}</span>
+            <span className="text-xs text-white/80">M</span>
           </div>
-        ) : (
-          <div className="flex items-start gap-4">
-            <ScoreBlock label="YOU" value={dead ? myScore || localScore : localScore} dim={dead} />
-            <div className="flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-cyan-400 font-bold text-xs backdrop-blur-md border border-cyan-400/40 self-center">
-              <svg className="size-3.5 fill-cyan-400" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              <span>{powers.stars ?? 0}</span>
-            </div>
+
+          <span className="h-4 w-px bg-white/25" />
+
+          {/* Star counter */}
+          <div className="flex items-center gap-1 text-amber-400 font-bold text-sm">
+            <svg className="size-4 fill-amber-400 drop-shadow-[0_0_6px_#f59e0b]" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            <span className="tabular-nums">{powers.stars ?? 0}</span>
           </div>
-        )}
-        <ScoreBlock label={solo ? "SCORE" : "RIVAL"} value={solo ? localScore : theirScore} align="right" dim={!solo && !theirAlive} />
+
+          {!solo && (
+            <>
+              <span className="h-4 w-px bg-white/25" />
+              <div className="text-xs text-cyan-300">
+                RIVAL: <span className="font-bold text-white tabular-nums">{theirScore}</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      {solo && !dead && countdown <= 0 && <Button variant="ghost" size="icon" aria-label={paused ? "Resume game" : "Pause game"} className="absolute left-4 top-[calc(env(safe-area-inset-top)+14px)] size-12 text-game-ninja hover:bg-game-eye/25 [&_svg]:size-8" onClick={() => {
-        engineRef.current?.setPaused(!paused); setPaused(!paused);
-      }}>{paused ? <Play fill="currentColor" /> : <Pause fill="currentColor" />}</Button>}
+
       <div className="pointer-events-none absolute inset-x-0 top-24 flex justify-center gap-5 text-game-ninja">
         {powers.shield > 0 && <div className="flex items-center gap-1.5 font-mono text-sm" aria-label="Shield active"><Shield className="size-5" /><span>{Math.ceil(powers.shield)}s</span></div>}
         {powers.speed > 0 && <div className="flex items-center gap-1.5 font-mono text-sm" aria-label="Speed-up active"><ChevronsRight className="size-5" /><span>{Math.ceil(powers.speed)}s</span></div>}
       </div>
-      {paused && <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/50"><p className="font-display text-4xl font-bold text-game-ninja">PAUSED</p></div>}
+
+      {paused && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/60 px-6 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-xs rounded-2xl border-4 border-[#1e3a5f] bg-[#d5e4ec] p-6 text-center shadow-2xl">
+            <h2 className="font-display text-3xl font-black text-[#1e3a5f]">PAUSED</h2>
+            <div className="mt-5 flex flex-col gap-2.5">
+              <Button
+                onClick={() => {
+                  engineRef.current?.setPaused(false);
+                  setPaused(false);
+                }}
+                className="h-11 w-full rounded-xl bg-[#1e3a5f] font-display text-sm font-bold tracking-wider text-white hover:bg-[#2a4f7a]"
+              >
+                <Play className="mr-2 size-4 fill-current" /> RESUME
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (onExit) onExit();
+                  else window.location.href = "/";
+                }}
+                className="h-11 w-full rounded-xl border-2 border-[#1e3a5f] bg-white/80 font-display text-sm font-bold tracking-wider text-[#1e3a5f] hover:bg-white"
+              >
+                <LogOut className="mr-2 size-4" /> EXIT TO HOME
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {dead && !solo && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/85 px-6 text-center">

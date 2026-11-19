@@ -69,10 +69,11 @@ export class GameEngine {
     const w = Math.max(rect.width, 1), h = Math.max(rect.height, 1);
     this.canvas.width = Math.floor(w * dpr);
     this.canvas.height = Math.floor(h * dpr);
-    this.vw = Math.max(420, w / h * 400);
+    // Zoom in camera so character and track are prominent and clearly visible (matching reference)
+    this.vw = Math.max(300, (w / h) * 220);
     this.scale = this.canvas.width / this.vw;
     this.vh = this.canvas.height / this.scale;
-    this.groundY = this.vh * 0.45;
+    this.groundY = this.vh * 0.48;
   }
   start() {
     if (this.running) return;

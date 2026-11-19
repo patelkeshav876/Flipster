@@ -62,51 +62,42 @@ export class GameArt {
       }
       this.circle(0, 0, 9, "metal", "metal-dark"); this.circle(0, 0, 3.5, "wood-light", "metal-dark");
     } else if (kind === "mace") {
-      const cx = o.w / 2;
-      const swingAngle = Math.sin(time * 3.6 + o.x * 0.05) * 0.82;
-      const chainLen = 46;
+      const hingeX = o.w - 10;
+      const swing = Math.sin(time * 3.4 + o.x * 0.05);
+      const angle = Math.PI + swing * 0.82;
+      const armLen = 50;
       const r = 18;
       
-      const ballX = cx + Math.sin(swingAngle) * chainLen;
-      const ballY = -o.h + Math.cos(swingAngle) * chainLen;
+      const ballX = hingeX + Math.cos(angle) * armLen;
+      const ballY = -6 + Math.sin(angle) * armLen;
       
-      // 1. Sturdy iron mounting frame: track base mount + vertical post rising to top pivot
+      // 1. Heavy iron hinge bracket mounted directly on the track surface (matching reference)
       c.fillStyle = this.color("metal-dark");
-      c.fillRect(cx - 10, -6, 20, 6);
+      c.fillRect(hingeX - 9, -7, 18, 7);
       c.fillStyle = this.color("metal");
-      c.fillRect(cx - 7, -9, 14, 4);
-      
-      // Upright support girder
-      c.fillStyle = this.color("metal-dark");
-      c.fillRect(cx - 4, -o.h, 8, o.h - 9);
-      c.fillStyle = this.color("metal");
-      c.fillRect(cx - 2, -o.h, 4, o.h - 9);
-      
-      // Top pivot arm bracket
-      c.fillStyle = this.color("metal");
-      c.fillRect(cx - 9, -o.h - 3, 18, 6);
+      c.fillRect(hingeX - 7, -10, 14, 4);
       c.strokeStyle = this.color("metal-dark");
       c.lineWidth = 1.5;
-      c.strokeRect(cx - 9, -o.h - 3, 18, 6);
+      c.strokeRect(hingeX - 7, -10, 14, 4);
+
+      // Rotating hinge pin / pivot joint
+      this.circle(hingeX, -6, 6, "metal", "metal-dark", 1.8);
+      this.circle(hingeX, -6, 2.5, "metal-light", "metal-dark");
       
-      // Top pivot bearing & bolt
-      this.circle(cx, -o.h, 6, "metal", "metal-dark", 1.5);
-      this.circle(cx, -o.h, 2.5, "metal-light", "metal-dark");
-      
-      // 2. Iron chain links swinging from pivot (cx, -o.h) down to ball (ballX, ballY)
-      const dx = ballX - cx;
-      const dy = ballY - (-o.h);
-      const links = 7;
+      // 2. Segmented mechanical iron arm swinging from track hinge to ball
+      const dx = ballX - hingeX;
+      const dy = ballY - (-6);
+      const links = 6;
       for (let i = 1; i <= links; i++) {
         const t = i / (links + 1);
-        const lx = cx + dx * t;
-        const ly = -o.h + dy * t;
+        const lx = hingeX + dx * t;
+        const ly = -6 + dy * t;
         c.save();
         c.translate(lx, ly);
         c.rotate(Math.atan2(dy, dx) + Math.PI / 2);
         c.strokeStyle = this.color("metal-light");
-        c.lineWidth = 2;
-        c.strokeRect(-2.5, -4.5, 5, 9);
+        c.lineWidth = 2.5;
+        c.strokeRect(-3, -4.5, 6, 9);
         c.restore();
       }
       

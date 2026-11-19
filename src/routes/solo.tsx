@@ -2,9 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { GameScreen } from "@/components/game/game-screen";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, LogOut } from "lucide-react";
+import { RotateCcw, LogOut, Trophy } from "lucide-react";
+import { TournamentStore } from "@/lib/tournament/store";
 
 export const Route = createFileRoute("/solo")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tournamentId: typeof search.tournamentId === "string" ? search.tournamentId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Flipster Solo — Endless Ninja Run" },
@@ -20,11 +24,14 @@ export const Route = createFileRoute("/solo")({
 
 function SoloPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const tournamentId = search.tournamentId;
   const [run, setRun] = useState<{ seed: number; attempt: number } | null>(null);
   const [score, setScore] = useState(0);
   const [stats, setStats] = useState({ distance: 0, stars: 0 });
   const [finished, setFinished] = useState(false);
   const [locked, setLocked] = useState(true);
+  const [tourneySubmitted, setTourneySubmitted] = useState(false);
 
   useEffect(() => {
     setRun({ seed: Math.floor(Math.random() * 2 ** 31), attempt: 0 });
@@ -50,9 +57,14 @@ function SoloPage() {
         spectator={false}
         solo
         onScore={setScore}
+        onExit={() => navigate({ to: "/" })}
         onDeath={(finalScore, finalStats) => {
           setScore(finalScore);
           if (finalStats) setStats(finalStats);
+          if (tournamentId && !tourneySubmitted) {
+            TournamentStore.submitTournamentScore(tournamentId, finalScore);
+            setTourneySubmitted(true);
+          }
           setFinished(true);
         }}
       />
@@ -78,6 +90,12 @@ function SoloPage() {
               </p>
             </div>
 
+            {tournamentId && (
+              <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3 py-1 font-mono text-xs font-bold text-amber-700">
+                <Trophy className="size-4" /> Score Submitted to Tournament!
+              </div>
+            )}
+
             {/* LIFE LOST footer */}
             <h3 className="font-display text-4xl font-black tracking-[0.1em] text-[#dc2626] drop-shadow-[0_2px_0_rgba(255,255,255,0.6)]">
               LIFE LOST
@@ -94,6 +112,7 @@ function SoloPage() {
                 setStats({ distance: 0, stars: 0 });
                 setFinished(false);
                 setLocked(true);
+                setTourneySubmitted(false);
                 setRun({ seed: Math.floor(Math.random() * 2 ** 31), attempt: run.attempt + 1 });
               }}
             >

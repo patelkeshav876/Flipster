@@ -24,47 +24,48 @@ export function stepRunner(runner: Runner, dt: number): Runner {
 }
 
 export function getMaceGeometry(obstacle: Obstacle, time: number) {
-  const cx = obstacle.x + obstacle.w / 2;
-  const swingAngle = Math.sin(time * 3.6 + obstacle.x * 0.05) * 0.82;
-  const chainLen = 46;
-  const pivotH = obstacle.h; // 65
-  const ballX = cx + Math.sin(swingAngle) * chainLen;
-  const ballY = pivotH - Math.cos(swingAngle) * chainLen;
+  const hingeX = obstacle.x + obstacle.w - 10;
+  const hingeY = 0;
+  const swing = Math.sin(time * 3.4 + obstacle.x * 0.05);
+  const angle = Math.PI + swing * 0.82;
+  const armLen = 50;
+  const ballX = hingeX + Math.cos(angle) * armLen;
+  const ballY = Math.sin(angle) * armLen;
   const r = 18;
-  return { cx, pivotH, swingAngle, chainLen, ballX, ballY, r };
+  return { hingeX, hingeY, angle, armLen, ballX, ballY, r };
 }
 
 export function hitsObstacle(runner: Runner, playerX: number, obstacle: Obstacle, time = 0): boolean {
   if (obstacle.kind === "mace") {
     // Flipping to the opposite side of the track completely avoids the mace
     if (runner.side !== obstacle.side) return false;
-    const { cx, pivotH, ballX, ballY, r } = getMaceGeometry(obstacle, time);
+    const { hingeX, ballX, ballY, r } = getMaceGeometry(obstacle, time);
     const playerLeft = playerX;
     const playerRight = playerX + PLAYER_W;
     const runnerBottom = runner.offset;
     const runnerTop = runner.offset + PLAYER_H;
 
-    // 1. Support post & base collision: blocks full height up to pivotH
-    if (playerRight > cx - 7 && playerLeft < cx + 7 && runnerBottom < pivotH) {
+    // 1. Track hinge base bracket collision
+    if (playerRight > hingeX - 9 && playerLeft < hingeX + 9 && runnerBottom < 16) {
       return true;
     }
 
-    // 2. Swinging spiked mace ball collision
+    // 2. Rotating spiked mace ball collision
     const nearX = Math.max(playerLeft, Math.min(ballX, playerRight));
     const nearY = Math.max(runnerBottom, Math.min(ballY, runnerTop));
     if ((nearX - ballX) ** 2 + (nearY - ballY) ** 2 < r ** 2) {
       return true;
     }
 
-    // 3. Chain line segment collision from pivot (cx, pivotH) to ball (ballX, ballY)
-    const cdx = ballX - cx;
-    const cdy = ballY - pivotH;
-    const segLenSq = cdx * cdx + cdy * cdy;
+    // 3. Rotating hinge arm line segment collision from hinge (hingeX, 0) to ball (ballX, ballY)
+    const adx = ballX - hingeX;
+    const ady = ballY;
+    const segLenSq = adx * adx + ady * ady;
     const rcx = playerX + PLAYER_W / 2;
     const rcy = runnerBottom + PLAYER_H / 2;
-    const u = segLenSq > 0 ? Math.max(0, Math.min(1, ((rcx - cx) * cdx + (rcy - pivotH) * cdy) / segLenSq)) : 0;
-    const px = cx + u * cdx;
-    const py = pivotH + u * cdy;
+    const u = segLenSq > 0 ? Math.max(0, Math.min(1, ((rcx - hingeX) * adx + rcy * ady) / segLenSq)) : 0;
+    const px = hingeX + u * adx;
+    const py = u * ady;
     if ((rcx - px) ** 2 + (rcy - py) ** 2 < (PLAYER_W / 2 + 5) ** 2) {
       return true;
     }
