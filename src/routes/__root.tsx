@@ -22,6 +22,16 @@ declare global {
         requestFullscreen?: () => void | Promise<void>;
         lockOrientation?: () => void;
         unlockOrientation?: () => void;
+        initData?: string;
+        initDataUnsafe?: {
+          user?: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+            language_code?: string;
+          };
+        };
       };
     };
   }

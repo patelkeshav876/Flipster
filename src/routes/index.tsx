@@ -23,6 +23,14 @@ import {
   Bell,
   ChevronRight,
   Medal,
+  Lock,
+  Unlock,
+  KeyRound,
+  ShieldCheck,
+  LogOut,
+  Eye,
+  EyeOff,
+  UserCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerId, makeCode } from "@/lib/game/player-id";
@@ -32,6 +40,11 @@ import {
   type MatchRecord,
   type UserProfile,
 } from "@/lib/tournament/store";
+import {
+  AdminAuth,
+  type AdminAuthStatus,
+  type TelegramAdminUser,
+} from "@/lib/auth/admin";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -73,11 +86,22 @@ function HomePage() {
   const [adminHours, setAdminHours] = useState(24);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
 
+  // Admin authentication state
+  const [adminStatus, setAdminStatus] = useState<AdminAuthStatus>(AdminAuth.getStatus());
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [showPin, setShowPin] = useState(false);
+  const [newPinInput, setNewPinInput] = useState("");
+  const [whitelistInput, setWhitelistInput] = useState("");
+  const [securityMessage, setSecurityMessage] = useState<string | null>(null);
+  const [showSecuritySettings, setShowSecuritySettings] = useState(false);
+
   // Reload state
   const reloadData = () => {
     setProfile(TournamentStore.getProfile());
     setTournaments(TournamentStore.getTournaments());
     setMatchHistory(TournamentStore.getMatchHistory());
+    setAdminStatus(AdminAuth.getStatus());
   };
 
   useEffect(() => {
@@ -173,6 +197,60 @@ function HomePage() {
   const handleDeleteTournament = (id: string) => {
     TournamentStore.deleteTournament(id);
     setTournaments(TournamentStore.getTournaments());
+  };
+
+  const refreshAdminStatus = () => {
+    setAdminStatus(AdminAuth.getStatus());
+  };
+
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError(null);
+    const success = AdminAuth.verifyPin(pinInput);
+    if (success) {
+      setPinInput("");
+      refreshAdminStatus();
+    } else {
+      setPinError("Invalid Master PIN. (Default setup PIN is 8760)");
+    }
+  };
+
+  const handleLockAdmin = () => {
+    AdminAuth.lockAdminSession();
+    refreshAdminStatus();
+  };
+
+  const handleUpdatePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPinInput.trim().length < 4) {
+      setSecurityMessage("PIN must be at least 4 characters.");
+      return;
+    }
+    AdminAuth.updatePin(newPinInput.trim());
+    setNewPinInput("");
+    setSecurityMessage("Master PIN updated successfully!");
+    setTimeout(() => setSecurityMessage(null), 3000);
+  };
+
+  const handleAddCurrentTelegram = () => {
+    if (adminStatus.telegramUser?.username) {
+      AdminAuth.addWhitelist(adminStatus.telegramUser.username);
+    } else if (adminStatus.telegramUser?.id) {
+      AdminAuth.addWhitelist(String(adminStatus.telegramUser.id));
+    }
+    refreshAdminStatus();
+    setSecurityMessage("Your Telegram account is now permanently whitelisted as Admin!");
+    setTimeout(() => setSecurityMessage(null), 3000);
+  };
+
+  const handleAddCustomWhitelist = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!whitelistInput.trim()) return;
+    AdminAuth.addWhitelist(whitelistInput.trim());
+    setWhitelistInput("");
+    refreshAdminStatus();
+    setSecurityMessage(`Added ${whitelistInput.trim()} to Admin Whitelist!`);
+    setTimeout(() => setSecurityMessage(null), 3000);
   };
 
   return (
@@ -767,21 +845,211 @@ function HomePage() {
         )}
 
         {/* TAB 5: ADMIN (Tournament Creator & Manager) */}
-        {activeTab === "admin" && (
+        {activeTab === "admin" && !adminStatus.isAdmin && (
           <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="size-5 text-amber-600" />
-                <h1 className="font-display text-xl font-black text-slate-900">
-                  Admin Tournament Manager
-                </h1>
+            <div className="rounded-3xl border border-[#e2dec9] bg-white p-6 shadow-sm text-center">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 shadow-sm">
+                <Lock className="size-7" />
               </div>
-              <p className="mt-1 font-mono text-xs text-slate-500">
-                Create and host official Flipster tournaments with entry fees, prize pools, and custom durations.
+
+              <h1 className="mt-3.5 font-display text-2xl font-black text-slate-900">
+                Admin Verification Gate
+              </h1>
+              <p className="mt-1 font-mono text-xs text-slate-500 max-w-xs mx-auto">
+                Flipster tournament management is restricted. Unlock with Telegram or Master PIN.
               </p>
 
-              {/* Create Tournament Form */}
-              <form onSubmit={handleCreateTournament} className="mt-5 space-y-3.5">
+              {/* Telegram Detection Status Box */}
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-[#fbfaf5] p-4 text-left">
+                <div className="flex items-center gap-2 font-display text-xs font-black text-slate-900 uppercase tracking-wide">
+                  <span>📱 Telegram Verification</span>
+                </div>
+                {adminStatus.telegramUser ? (
+                  <div className="mt-2 space-y-1 font-mono text-xs">
+                    <div className="text-slate-700">
+                      User:{" "}
+                      <span className="font-bold text-slate-900">
+                        @{adminStatus.telegramUser.username || "No Username"}
+                      </span>
+                    </div>
+                    <div className="text-slate-500 text-[11px]">
+                      Telegram ID: <span className="font-bold text-slate-700">{adminStatus.telegramUser.id}</span>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-amber-700">
+                      <ShieldAlert className="size-3.5 text-amber-600" />
+                      <span>Not on admin whitelist. Use Master PIN below to unlock.</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs font-mono text-slate-500">
+                    No Telegram session detected. Entering via web browser.
+                  </div>
+                )}
+              </div>
+
+              {/* Master PIN Unlock Form */}
+              <form onSubmit={handleVerifyPin} className="mt-5 space-y-3.5 text-left">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="font-mono text-xs font-bold text-slate-700">
+                      Master Admin PIN
+                    </label>
+                    <span className="font-mono text-[10px] text-slate-400">Default PIN: 8760</span>
+                  </div>
+                  <div className="relative mt-1">
+                    <input
+                      type={showPin ? "text" : "password"}
+                      value={pinInput}
+                      onChange={(e) => setPinInput(e.target.value)}
+                      placeholder="Enter 4-digit PIN (e.g. 8760)"
+                      maxLength={12}
+                      required
+                      className="h-11 w-full rounded-xl border border-slate-200 pl-3.5 pr-10 font-mono text-sm font-bold text-slate-900 tracking-widest focus:border-slate-800 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                  {pinError && (
+                    <p className="mt-1.5 font-mono text-xs font-bold text-rose-600">{pinError}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  className="h-11 w-full rounded-xl bg-slate-900 font-display text-xs font-black tracking-wider text-white shadow-md hover:bg-slate-800 active:scale-95"
+                >
+                  <KeyRound className="mr-2 size-4" /> UNLOCK ADMIN ACCESS
+                </Button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "admin" && adminStatus.isAdmin && (
+          <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
+            {/* Admin Header with Verification Status */}
+            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="size-5 text-emerald-600" />
+                    <h1 className="font-display text-xl font-black text-slate-900">
+                      Admin Tournament Manager
+                    </h1>
+                  </div>
+                  {adminStatus.method === "telegram" ? (
+                    <div className="mt-1 flex items-center gap-1.5 font-mono text-xs font-bold text-emerald-700">
+                      <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Verified via Telegram (@{adminStatus.telegramUser?.username || adminStatus.telegramUser?.id})
+                    </div>
+                  ) : (
+                    <div className="mt-1 flex items-center gap-1.5 font-mono text-xs font-bold text-amber-700">
+                      <span className="size-2 rounded-full bg-amber-500" />
+                      Verified via Master PIN
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleLockAdmin}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-lg border-slate-200 font-mono text-[11px] font-bold text-slate-600 hover:text-rose-600"
+                >
+                  <LogOut className="mr-1 size-3.5" /> Lock
+                </Button>
+              </div>
+
+              {/* One-click whitelist current telegram if unlocked via PIN */}
+              {adminStatus.telegramUser && !adminStatus.isTelegramWhitelisted && (
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-display text-xs font-black text-emerald-900">
+                        Link Your Telegram Account
+                      </div>
+                      <div className="font-mono text-[11px] text-emerald-700">
+                        Auto-unlock without PIN next time
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleAddCurrentTelegram}
+                      size="sm"
+                      className="h-8 rounded-lg bg-emerald-600 font-mono text-[10px] font-bold text-white hover:bg-emerald-700"
+                    >
+                      <UserCheck className="mr-1 size-3.5" /> Authorize @{adminStatus.telegramUser.username || adminStatus.telegramUser.id}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Security Settings Toggle */}
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSecuritySettings(!showSecuritySettings)}
+                  className="flex items-center justify-between w-full font-mono text-xs font-bold text-slate-500 hover:text-slate-800"
+                >
+                  <span>🔐 Admin Security & Passcode Settings</span>
+                  <span>{showSecuritySettings ? "▲" : "▼"}</span>
+                </button>
+
+                {showSecuritySettings && (
+                  <div className="mt-3 space-y-3 rounded-2xl border border-slate-200 bg-[#fbfaf5] p-3.5 text-xs font-mono">
+                    {/* Change PIN Form */}
+                    <form onSubmit={handleUpdatePin} className="space-y-2">
+                      <label className="font-bold text-slate-700">Change Master PIN</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          value={newPinInput}
+                          onChange={(e) => setNewPinInput(e.target.value)}
+                          placeholder="New 4-digit PIN"
+                          maxLength={12}
+                          className="h-9 flex-1 rounded-lg border border-slate-200 px-2.5 font-bold text-slate-800 focus:outline-none"
+                        />
+                        <Button type="submit" size="sm" className="h-9 rounded-lg bg-slate-900 text-[11px] font-bold text-white">
+                          UPDATE PIN
+                        </Button>
+                      </div>
+                    </form>
+
+                    {/* Add Telegram User / ID */}
+                    <form onSubmit={handleAddCustomWhitelist} className="space-y-2 border-t border-slate-200 pt-3">
+                      <label className="font-bold text-slate-700">Whitelist Another Telegram User</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={whitelistInput}
+                          onChange={(e) => setWhitelistInput(e.target.value)}
+                          placeholder="Telegram @username or User ID"
+                          className="h-9 flex-1 rounded-lg border border-slate-200 px-2.5 font-bold text-slate-800 focus:outline-none"
+                        />
+                        <Button type="submit" size="sm" className="h-9 rounded-lg bg-slate-800 text-[11px] font-bold text-white">
+                          ADD ADMIN
+                        </Button>
+                      </div>
+                    </form>
+
+                    {securityMessage && (
+                      <p className="font-bold text-emerald-600">{securityMessage}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Create Tournament Form */}
+            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+              <h2 className="font-display text-lg font-black text-slate-900">
+                Create New Tournament
+              </h2>
+              <form onSubmit={handleCreateTournament} className="mt-4 space-y-3.5">
                 <div>
                   <label className="font-mono text-xs font-bold text-slate-700">Tournament Title</label>
                   <input
@@ -880,7 +1148,11 @@ function HomePage() {
             { id: "tournaments", label: "Tournaments", icon: Trophy },
             { id: "matches", label: "1v1 Match", icon: Users },
             { id: "profile", label: "Profile", icon: User },
-            { id: "admin", label: "Admin", icon: Settings },
+            {
+              id: "admin",
+              label: "Admin",
+              icon: adminStatus.isAdmin ? ShieldCheck : Lock,
+            },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
