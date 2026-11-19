@@ -12,10 +12,12 @@ type Match = {
   seed: number;
   status: string;
   p1_id: string;
+  p1_name?: string;
   p1_score: number;
   p1_alive: boolean;
   p1_ready: boolean;
   p2_id: string | null;
+  p2_name?: string;
   p2_score: number;
   p2_alive: boolean;
   p2_ready: boolean;
@@ -52,6 +54,21 @@ function MatchPage() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [resultLocked, setResultLocked] = useState(true);
   const recordedRef = useRef<string | null>(null);
+
+  const isP1 = !!match && match.p1_id === playerId;
+  const isP2 = !!match && match.p2_id === playerId;
+  const isSpectator = !!match && !isP1 && !isP2;
+
+  const me = match
+    ? isP1
+      ? { score: match.p1_score, alive: match.p1_alive, ready: match.p1_ready }
+      : { score: match.p2_score, alive: match.p2_alive, ready: match.p2_ready }
+    : null;
+  const them = match
+    ? isP1
+      ? { score: match.p2_score, alive: match.p2_alive, ready: match.p2_ready }
+      : { score: match.p1_score, alive: match.p1_alive, ready: match.p1_ready }
+    : null;
 
   // Record completed match to history
   useEffect(() => {
@@ -92,9 +109,10 @@ function MatchPage() {
       }
       let row = data as Match;
       if (row.p1_id !== playerId && !row.p2_id) {
+        const myName = TournamentStore.getProfile().username;
         const { data: updated } = await supabase
           .from("matches")
-          .update({ p2_id: playerId })
+          .update({ p2_id: playerId, p2_name: myName })
           .eq("id", row.id)
           .is("p2_id", null)
           .select("*")
@@ -123,21 +141,6 @@ function MatchPage() {
       supabase.removeChannel(channel);
     };
   }, [match?.id]);
-
-  const isP1 = !!match && match.p1_id === playerId;
-  const isP2 = !!match && match.p2_id === playerId;
-  const isSpectator = !!match && !isP1 && !isP2;
-
-  const me = match
-    ? isP1
-      ? { score: match.p1_score, alive: match.p1_alive, ready: match.p1_ready }
-      : { score: match.p2_score, alive: match.p2_alive, ready: match.p2_ready }
-    : null;
-  const them = match
-    ? isP1
-      ? { score: match.p2_score, alive: match.p2_alive, ready: match.p2_ready }
-      : { score: match.p1_score, alive: match.p1_alive, ready: match.p1_ready }
-    : null;
 
   const patch = useCallback(
     async (values: Partial<Match>) => {

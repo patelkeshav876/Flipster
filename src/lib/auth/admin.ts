@@ -1,18 +1,31 @@
 /**
  * Admin Authentication & Authorization
- * Supports dual verification:
- * 1. Automatic verification via Telegram Mini App user ID or @username whitelist
- * 2. Secret Master PIN unlock (works on desktop/mobile browsers & Telegram)
+ * Supports triple verification:
+ * 1. Automatic verification via Telegram user ID (1446312281) or @username whitelist
+ * 2. Automatic verification via Google OAuth email (patelkeshab876@gmail.com)
+ * 3. Secret Master PIN unlock (default 8760)
  */
+
+import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_SESSION_KEY = "flipster_admin_authenticated";
 const STORAGE_PIN_KEY = "flipster_admin_custom_pin";
 const STORAGE_WHITELIST_KEY = "flipster_admin_whitelist";
 
 const DEFAULT_PIN = "8760";
-const DEFAULT_WHITELISTED_USERNAMES = [
+
+// Pre-authorized Telegram usernames and numeric User IDs
+const DEFAULT_WHITELISTED_IDENTITIES = [
+  "1446312281",
   "patelkeshav876",
   "patelkeshav",
+  "patelkeshab876",
+];
+
+// Pre-authorized Google Admin Emails
+const DEFAULT_ADMIN_EMAILS = [
+  "patelkeshab876@gmail.com",
+  "patelkeshav876@gmail.com",
 ];
 
 export interface TelegramAdminUser {
@@ -23,8 +36,9 @@ export interface TelegramAdminUser {
 
 export type AdminAuthStatus = {
   isAdmin: boolean;
-  method: "telegram" | "pin" | "none";
+  method: "telegram" | "email" | "pin" | "none";
   telegramUser: TelegramAdminUser | null;
+  adminEmail: string | null;
   isTelegramWhitelisted: boolean;
 };
 
@@ -47,7 +61,7 @@ export const AdminAuth = {
    * Returns list of authorized Telegram usernames / IDs
    */
   getWhitelistedIdentities(): string[] {
-    const list = [...DEFAULT_WHITELISTED_USERNAMES];
+    const list = [...DEFAULT_WHITELISTED_IDENTITIES];
     if (typeof window !== "undefined") {
       try {
         const custom = localStorage.getItem(STORAGE_WHITELIST_KEY);
@@ -58,10 +72,19 @@ export const AdminAuth = {
           }
         }
       } catch {
-        // ignore storage parse errors
+        // ignore parse error
       }
     }
     return Array.from(new Set(list.map((s) => s.toLowerCase().replace(/^@/, ""))));
+  },
+
+  /**
+   * Checks whether an email matches the Admin whitelist
+   */
+  isEmailAdmin(email: string | null | undefined): boolean {
+    if (!email) return false;
+    const clean = email.trim().toLowerCase();
+    return DEFAULT_ADMIN_EMAILS.includes(clean);
   },
 
   /**
@@ -148,18 +171,60 @@ export const AdminAuth = {
   },
 
   /**
-   * Get full auth status
+   * Trigger Google OAuth login via Supabase
    */
-  getStatus(): AdminAuthStatus {
+  async signInWithGoogle(): Promise<{ error: Error | null }> {
+    try {
+      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+        },
+      });
+      return { error };
+    } catch (err: any) {
+      return { error: err };
+    }
+  },
+
+  /**
+   * Sign out of Supabase
+   */
+  async signOut(): Promise<void> {
+    try {
+      await supabase.auth.signOut();
+      this.lockAdminSession();
+    } catch {
+      // ignore
+    }
+  },
+
+  /**
+   * Get full auth status given optional logged-in user email
+   */
+  getStatus(userEmail?: string | null): AdminAuthStatus {
     const tgUser = this.getTelegramUser();
     const isWhitelisted = this.isTelegramWhitelisted();
+    const isEmailMatched = this.isEmailAdmin(userEmail);
     const isPinActive = this.isPinUnlocked();
+
+    if (isEmailMatched) {
+      return {
+        isAdmin: true,
+        method: "email",
+        telegramUser: tgUser,
+        adminEmail: userEmail || null,
+        isTelegramWhitelisted: isWhitelisted,
+      };
+    }
 
     if (isWhitelisted) {
       return {
         isAdmin: true,
         method: "telegram",
         telegramUser: tgUser,
+        adminEmail: null,
         isTelegramWhitelisted: true,
       };
     }
@@ -169,6 +234,7 @@ export const AdminAuth = {
         isAdmin: true,
         method: "pin",
         telegramUser: tgUser,
+        adminEmail: null,
         isTelegramWhitelisted: false,
       };
     }
@@ -177,6 +243,7 @@ export const AdminAuth = {
       isAdmin: false,
       method: "none",
       telegramUser: tgUser,
+      adminEmail: null,
       isTelegramWhitelisted: false,
     };
   },
