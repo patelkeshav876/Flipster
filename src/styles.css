@@ -368,3 +368,53 @@
   .flipster-cover-title { font-size: 38px; }
   .flipster-cover-actions { margin-top: 19px; }
 }
+
+/* Disable user text selection across the website */
+html, body, *, *::before, *::after {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Dynamic radar & searching animations */
+@keyframes sonar-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+@keyframes radar-scan {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-sonar {
+  animation: sonar-pulse 2s cubic-bezier(0.1, 0.4, 0.6, 1) infinite;
+}
+
+.animate-sonar-delayed {
+  animation: sonar-pulse 2s cubic-bezier(0.1, 0.4, 0.6, 1) 0.8s infinite;
+}
+
+.animate-radar-sweep {
+  animation: radar-scan 2.4s linear infinite;
+}
+

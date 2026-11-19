@@ -334,11 +334,18 @@ function HomePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f5f3ec] text-[#1e293b]">
-      {/* Top Header matching reference (Image 1) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#e2dec9] bg-[#fbf9f4]/95 px-5 py-3.5 backdrop-blur-md">
+    <div className="relative min-h-screen flex flex-col bg-[#f6f4ee] text-[#1e293b] overflow-x-hidden selection:bg-transparent">
+      {/* Ambient Glassmorphic Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-24 -left-24 size-96 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-24 size-[450px] rounded-full bg-gradient-to-br from-indigo-500/15 via-sky-400/10 to-purple-500/10 blur-3xl" />
+        <div className="absolute -bottom-24 left-1/3 size-96 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
+      </div>
+
+      {/* Top Header with Frosted Glassmorphism */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/60 bg-white/70 px-5 py-3.5 backdrop-blur-xl shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="relative flex size-10 items-center justify-center rounded-full bg-[#e8bc38] font-display font-black text-white shadow-md">
+          <div className="relative flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 font-display font-black text-slate-950 shadow-md">
             <span>{profile.username.charAt(0).toUpperCase()}</span>
             <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white bg-emerald-500" />
           </div>
@@ -352,8 +359,8 @@ function HomePage() {
 
         <div className="flex items-center gap-2.5">
           {/* Coins Wallet Badge */}
-          <div className="flex items-center gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-100 to-amber-200 px-3 py-1.5 shadow-sm">
-            <Coins className="size-4 text-amber-700" />
+          <div className="flex items-center gap-1.5 rounded-xl border border-amber-300/80 bg-amber-400/15 backdrop-blur-md px-3 py-1.5 shadow-sm">
+            <Coins className="size-4 text-amber-600" />
             <span className="font-display text-sm font-black text-amber-900 tabular-nums">
               {profile.coins.toLocaleString()}
             </span>
@@ -361,7 +368,7 @@ function HomePage() {
 
           <button
             onClick={() => setActiveTab("profile")}
-            className="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            className="flex size-9 items-center justify-center rounded-xl border border-white/60 bg-white/70 backdrop-blur-md text-slate-600 hover:bg-white shadow-sm"
             title="Notifications"
           >
             <Bell className="size-4" />
@@ -370,12 +377,12 @@ function HomePage() {
       </header>
 
       {/* Main Tab Content */}
-      <main className="flex-1 pb-24">
+      <main className="relative z-10 flex-1 pb-24">
         {/* TAB 1: HOME */}
         {activeTab === "home" && (
           <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
-            {/* Wallet Quick Balance Card matching reference */}
-            <div className="rounded-3xl border border-[#e5dfc5] bg-[#fffcf5] p-5 shadow-sm">
+            {/* Wallet Quick Balance Card (Glassmorphic) */}
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl p-5 shadow-lg shadow-slate-900/5">
               <div className="grid grid-cols-2 gap-4 pb-4">
                 <div>
                   <div className="text-[11px] font-mono font-semibold uppercase text-slate-500">
@@ -398,61 +405,65 @@ function HomePage() {
               <div className="flex gap-2.5 pt-1">
                 <Button
                   onClick={handleClaimBonus}
-                  className="h-10 flex-1 rounded-xl border border-amber-400 bg-amber-400 font-display text-xs font-black tracking-wider text-slate-900 shadow-sm hover:bg-amber-300 active:scale-95"
+                  className="h-10 flex-1 rounded-xl border border-amber-300 bg-amber-400 font-display text-xs font-black tracking-wider text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-300 active:scale-95"
                 >
                   <Gift className="mr-1.5 size-4" /> DAILY BONUS +200
                 </Button>
                 <Button
                   onClick={() => setActiveTab("tournaments")}
                   variant="outline"
-                  className="h-10 flex-1 rounded-xl border-slate-300 bg-white font-display text-xs font-black tracking-wider text-slate-800 shadow-sm hover:bg-slate-50"
+                  className="h-10 flex-1 rounded-xl border-white/80 bg-white/80 backdrop-blur-md font-display text-xs font-black tracking-wider text-slate-800 shadow-sm hover:bg-white"
                 >
                   <Trophy className="mr-1.5 size-4 text-amber-500" /> TOURNAMENTS
                 </Button>
               </div>
             </div>
 
-            {/* Featured Game Card (Flipster) */}
+            {/* Featured Game Card (Flipster Glassmorphism) */}
             <div>
               <div className="mb-2.5 flex items-center justify-between">
                 <h2 className="font-display text-lg font-black tracking-wide text-slate-900">
                   Featured Game
                 </h2>
-                <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                <span className="flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50/80 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 backdrop-blur-md">
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE NOW
                 </span>
               </div>
 
-              <div className="group relative overflow-hidden rounded-3xl border-2 border-[#1e3a5f] bg-gradient-to-b from-[#67c5de] to-[#4faec7] p-6 text-white shadow-lg">
-                <div className="flex items-center gap-4">
+              <div className="group relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/95 via-indigo-950/90 to-slate-900/95 p-6 text-white shadow-2xl shadow-indigo-950/20 backdrop-blur-2xl">
+                {/* Ambient Internal Glows */}
+                <div className="absolute -right-12 -top-12 size-48 rounded-full bg-amber-400/20 blur-2xl pointer-events-none" />
+                <div className="absolute -left-12 -bottom-12 size-48 rounded-full bg-indigo-500/25 blur-2xl pointer-events-none" />
+
+                <div className="relative z-10 flex items-center gap-4">
                   <img
                     src="/flipster-badge.png"
                     alt="Flipster"
-                    className="size-20 rounded-2xl object-cover drop-shadow-md"
+                    className="size-20 rounded-2xl object-cover drop-shadow-md border border-white/15"
                   />
                   <div className="flex-1">
-                    <span className="rounded-md bg-amber-400/90 px-2 py-0.5 font-mono text-[10px] font-black text-slate-900 uppercase">
-                      MPL Style Ninja Run
+                    <span className="rounded-md border border-amber-400/30 bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] font-black text-amber-300 uppercase tracking-wider backdrop-blur-md">
+                      Arcade Gravity Runner
                     </span>
-                    <h3 className="font-display text-2xl font-black tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                    <h3 className="font-display text-2xl font-black tracking-wide text-white drop-shadow-md">
                       FL!PSTER
                     </h3>
-                    <p className="font-mono text-xs text-white/90">
+                    <p className="font-mono text-xs text-white/80">
                       Flip gravity, dodge obstacles, and beat opponents to win game coins!
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="relative z-10 mt-5 grid grid-cols-2 gap-3">
                   <Button
                     onClick={() => navigate({ to: "/solo" })}
-                    className="h-12 rounded-xl border border-white/30 bg-[#1e3a5f] font-display text-sm font-black tracking-wider text-white shadow-md hover:bg-[#162a45] active:scale-95"
+                    className="h-12 rounded-xl border border-white/20 bg-white/10 font-display text-sm font-black tracking-wider text-white backdrop-blur-md shadow-md hover:bg-white/20 active:scale-95"
                   >
                     <Play className="mr-1.5 size-4 fill-white" /> PLAY SOLO
                   </Button>
                   <Button
                     onClick={() => setActiveTab("matches")}
-                    className="h-12 rounded-xl border border-white/30 bg-amber-400 font-display text-sm font-black tracking-wider text-slate-900 shadow-md hover:bg-amber-300 active:scale-95"
+                    className="h-12 rounded-xl border border-amber-300 bg-amber-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-lg shadow-amber-500/25 hover:bg-amber-300 active:scale-95"
                   >
                     <Users className="mr-1.5 size-4" /> 1v1 DUO RACE
                   </Button>
@@ -478,7 +489,7 @@ function HomePage() {
                 {tournaments.slice(0, 2).map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between rounded-2xl border border-[#e2dec9] bg-white p-4 shadow-sm"
+                    className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-4 shadow-sm"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -560,7 +571,7 @@ function HomePage() {
               {tournaments.map((t) => (
                 <div
                   key={t.id}
-                  className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm transition-all hover:shadow-md"
+                  className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm transition-all hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -702,7 +713,7 @@ function HomePage() {
         {activeTab === "matches" && (
           <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
             {/* 1v1 Room Launcher */}
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <h2 className="font-display text-xl font-black text-slate-900">
                 1v1 Head-to-Head Race
               </h2>
@@ -835,7 +846,7 @@ function HomePage() {
         {activeTab === "profile" && (
           <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
             {/* User Profile Header */}
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="flex size-16 items-center justify-center rounded-2xl bg-amber-400 text-2xl font-black text-slate-900 shadow-md">
                   {profile.username.charAt(0).toUpperCase()}
@@ -882,7 +893,7 @@ function HomePage() {
             </div>
 
             {/* Performance Overview (matching reference Image 1) */}
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <h2 className="mb-3.5 font-display text-lg font-black text-slate-900">
                 Career Performance
               </h2>
@@ -934,7 +945,7 @@ function HomePage() {
             </div>
 
             {/* Google Account & Player Verification */}
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <div>
                 <h3 className="font-display text-base font-black text-slate-900">
                   Player Identity Verification
@@ -1061,7 +1072,7 @@ function HomePage() {
         {/* TAB 5: ADMIN (Tournament Creator & Manager) */}
         {activeTab === "admin" && !adminStatus.isAdmin && (
           <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-6 shadow-sm text-center">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-6 shadow-sm text-center">
               <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 shadow-sm">
                 <Lock className="size-7" />
               </div>
@@ -1147,7 +1158,7 @@ function HomePage() {
         {activeTab === "admin" && adminStatus.isAdmin && (
           <div className="mx-auto max-w-lg space-y-5 p-4 animate-in fade-in">
             {/* Admin Header with Verification Status */}
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
@@ -1264,7 +1275,7 @@ function HomePage() {
             </div>
 
             {/* Create Tournament Form */}
-            <div className="rounded-3xl border border-[#e2dec9] bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <h2 className="font-display text-lg font-black text-slate-900">
                 Create New Tournament
               </h2>
@@ -1359,8 +1370,56 @@ function HomePage() {
         )}
       </main>
 
-      {/* Bottom Navigation Bar matching reference (Image 1) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e2dec9] bg-[#fbf9f4]/95 backdrop-blur-md">
+      {/* Dynamic Radar Matchmaking Scanner Modal */}
+      {busy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-b from-slate-900/90 to-slate-950/95 p-6 text-center text-white shadow-2xl backdrop-blur-2xl">
+            {/* Animated Sonar Radar Scanner */}
+            <div className="relative mx-auto my-6 flex size-36 items-center justify-center">
+              {/* Sonar Expanding Pulses */}
+              <div className="absolute inset-0 rounded-full border-2 border-amber-400/40 animate-sonar" />
+              <div className="absolute inset-0 rounded-full border-2 border-amber-400/30 animate-sonar-delayed" />
+
+              {/* Radar Grid Circles */}
+              <div className="absolute size-28 rounded-full border border-white/10" />
+              <div className="absolute size-20 rounded-full border border-white/15" />
+
+              {/* Sweeping Radar Beam */}
+              <div className="absolute inset-0 rounded-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/25 via-amber-400/5 to-transparent origin-center animate-radar-sweep" />
+              </div>
+
+              {/* Center Glowing Ninja Orb */}
+              <div className="relative z-10 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/50">
+                <span className="text-2xl animate-pulse">🥷</span>
+              </div>
+            </div>
+
+            {/* Dynamic Status Pill */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 font-mono text-xs font-bold text-amber-400 uppercase tracking-widest backdrop-blur-md">
+              <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+              <span>FINDING OPPONENT...</span>
+            </div>
+
+            <h3 className="mt-3 font-display text-xl font-black text-white tracking-wide">
+              Scanning Live Contenders
+            </h3>
+            <p className="mt-1 font-mono text-xs text-slate-400">
+              Pinging arena servers and pairing you with an active ninja rival...
+            </p>
+
+            <button
+              onClick={() => setBusy(false)}
+              className="mt-6 rounded-xl border border-white/15 bg-white/5 px-6 py-2.5 font-mono text-xs font-bold text-slate-300 hover:bg-white/10 active:scale-95 transition-all"
+            >
+              Cancel Matchmaking
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Navigation Bar with Frosted Glassmorphism */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/40 bg-white/75 backdrop-blur-xl shadow-lg">
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2">
           {[
             { id: "home", label: "Home", icon: Gamepad2 },
@@ -1389,7 +1448,7 @@ function HomePage() {
               >
                 <div
                   className={`flex size-8 items-center justify-center rounded-xl transition-all ${
-                    isActive ? "bg-amber-400 text-slate-950 shadow-sm" : ""
+                    isActive ? "bg-amber-400 text-slate-950 shadow-sm shadow-amber-500/20" : ""
                   }`}
                 >
                   <Icon className="size-4" />
