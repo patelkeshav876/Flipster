@@ -118,7 +118,8 @@ export class GameEngine {
     this.powers = tickPowers(this.powers, dt);
     this.speed = Math.min(MAX_SPEED, START_SPEED + SPEED_GAIN * this.time) * (this.powers.speed > 0 ? SPEED_MULTIPLIER : 1);
     this.distance += this.speed * dt;
-    this.score = Math.floor(this.distance / 10) + (this.powers.stars ?? 0) * 10;
+    const meters = Math.floor(this.distance / 16);
+    this.score = meters + (this.powers.stars ?? 0) * 10;
     if (this.jumpBuffer > 0) {
       this.jumpBuffer -= dt;
       if (this.runner.grounded) { this.runner = jumpRunner(this.runner); this.jumpBuffer = 0; }
@@ -268,12 +269,13 @@ export class GameEngine {
         p.alpha -= dt / p.life;
         if (p.alpha < 0) p.alpha = 0;
       }
+      const meters = Math.floor(this.distance / 16);
       this.draw();
-      this.onUpdate({ score: this.score, alive: false, speed: this.speed, powers: this.powers, distance: this.distance });
+      this.onUpdate({ score: this.score, alive: false, speed: this.speed, powers: this.powers, distance: meters });
       if (this.deathTime < 1.0) {
         requestAnimationFrame(animate);
       } else {
-        this.onDeath(this.score, { distance: Math.floor(this.distance / 10), stars: this.powers.stars ?? 0 });
+        this.onDeath(this.score, { distance: meters, stars: this.powers.stars ?? 0 });
       }
     };
     requestAnimationFrame(animate);
@@ -283,7 +285,8 @@ export class GameEngine {
     this.acc += this.paused ? 0 : Math.min((now-this.last)/1000,0.25); this.last = now;
     const fixed = 1/120;
     while (this.acc >= fixed) { this.step(fixed); this.acc -= fixed; if (!this.alive) break; }
-    this.draw(); this.onUpdate({score:this.score, alive:this.alive,speed:this.speed, powers: this.powers, distance: this.distance});
+    const meters = Math.floor(this.distance / 16);
+    this.draw(); this.onUpdate({score:this.score, alive:this.alive,speed:this.speed, powers: this.powers, distance: meters});
     if (this.alive) this.raf = requestAnimationFrame(this.loop);
   };
 }

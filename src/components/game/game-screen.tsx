@@ -219,7 +219,7 @@ export function GameScreen({
         <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-black/60 px-4 py-1.5 backdrop-blur-md border border-white/20 shadow-lg font-mono">
           {/* Distance meter (matching Image 2 bold '722 M') */}
           <div className="flex items-baseline gap-1 font-display font-black tracking-wider text-white">
-            <span className="text-lg tabular-nums">{Math.floor(distance || localScore * 0.8)}</span>
+            <span className="text-lg tabular-nums">{Math.floor(distance)}</span>
             <span className="text-xs text-white/80">M</span>
           </div>
 

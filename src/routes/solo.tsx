@@ -80,7 +80,7 @@ function SoloPage() {
             {/* Score block */}
             <div className="my-5 flex flex-col items-center gap-1.5 font-display text-base font-bold text-[#1e3a5f]">
               <p className="tracking-wide">
-                DISTANCE : {stats.distance || Math.floor(score * 0.8)} M
+                DISTANCE : {stats.distance} M
               </p>
               <p className="tracking-wide">
                 STAR BONUS : {stats.stars * 10}

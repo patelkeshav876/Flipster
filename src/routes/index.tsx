@@ -31,6 +31,8 @@ import {
   Eye,
   EyeOff,
   UserCheck,
+  Crown,
+  HelpCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerId, makeCode } from "@/lib/game/player-id";
@@ -45,6 +47,7 @@ import {
   type AdminAuthStatus,
   type TelegramAdminUser,
 } from "@/lib/auth/admin";
+import { TierBadge, type TierBadgeKind, TIER_CONFIG } from "@/components/ui/tier-badge";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -127,11 +130,13 @@ function HomePage() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const [googleHelpOpen, setGoogleHelpOpen] = useState(false);
+
   async function handleGoogleSignIn() {
     setAuthLoading(true);
     const { error } = await AdminAuth.signInWithGoogle();
     if (error) {
-      alert("Google Sign-In note: " + error.message);
+      setGoogleHelpOpen(true);
     }
     setAuthLoading(false);
   }
@@ -632,65 +637,115 @@ function HomePage() {
               ))}
             </div>
 
-            {/* Leaderboard Modal */}
+            {/* Leaderboard Modal (Matching Image 5 3D Podium) */}
             {selectedTourney && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in">
-                <div className="w-full max-w-md rounded-3xl border-2 border-slate-200 bg-white p-6 shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md animate-in fade-in">
+                <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-b from-slate-900/95 via-indigo-950/90 to-slate-900/95 p-6 text-white shadow-2xl backdrop-blur-2xl">
+                  {/* Glare */}
+                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 size-48 rounded-full bg-amber-400/20 blur-2xl pointer-events-none" />
+
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div>
-                      <div className="font-display text-lg font-black text-slate-900">
+                      <div className="font-display text-xl font-black text-white">
                         {selectedTourney.title}
                       </div>
-                      <div className="font-mono text-xs text-slate-500">Live Leaderboard Standings</div>
+                      <div className="font-mono text-xs text-amber-300">
+                        Total Prize Pool: 🪙 {selectedTourney.prizePool} Coins
+                      </div>
                     </div>
                     <button
                       onClick={() => setSelectedTourney(null)}
-                      className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200"
+                      className="rounded-full bg-white/10 p-1.5 text-slate-300 hover:bg-white/20 transition-all"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <div className="my-4 max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {selectedTourney.leaderboard.length === 0 ? (
-                      <div className="py-8 text-center font-mono text-xs text-slate-400">
-                        No scores recorded yet. Be the first to enter and claim Rank 1!
-                      </div>
-                    ) : (
-                      selectedTourney.leaderboard.map((row) => (
-                        <div
-                          key={row.rank}
-                          className={`flex items-center justify-between rounded-xl p-3 font-mono text-xs ${
-                            row.rank === 1
-                              ? "bg-amber-50 border border-amber-200"
-                              : "bg-slate-50 border border-slate-100"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`flex size-6 items-center justify-center rounded-full font-bold ${
-                                row.rank === 1
-                                  ? "bg-amber-400 text-slate-900"
-                                  : "bg-slate-200 text-slate-700"
-                              }`}
-                            >
-                              {row.rank}
-                            </span>
-                            <span className="font-bold text-slate-800">{row.username}</span>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className="font-bold text-slate-900 tabular-nums">
-                              {row.score} M
-                            </span>
-                            {row.prize > 0 && (
-                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                                +{row.prize} 🪙
-                              </span>
-                            )}
-                          </div>
+                  {/* 3D Leaderboard Podium (matching Image 5) */}
+                  {selectedTourney.leaderboard.length >= 3 && (
+                    <div className="my-5 flex items-end justify-center gap-2 pt-6">
+                      {/* 2nd Place Podium */}
+                      <div className="flex flex-col items-center">
+                        <div className="relative mb-1 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-300 to-slate-400 font-display font-black text-slate-950 shadow-md">
+                          {selectedTourney.leaderboard[1].username.charAt(0).toUpperCase()}
+                          <span className="absolute -top-2 -right-1 text-sm">🥈</span>
                         </div>
-                      ))
-                    )}
+                        <span className="max-w-[70px] truncate font-display text-[11px] font-bold text-slate-200">
+                          {selectedTourney.leaderboard[1].username}
+                        </span>
+                        <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 font-mono text-[9px] font-black text-cyan-300 border border-cyan-400/30">
+                          🪙 {selectedTourney.leaderboard[1].prize}
+                        </span>
+                        {/* 3D Pedestal Step 2 */}
+                        <div className="mt-2 flex h-20 w-20 flex-col items-center justify-center rounded-t-2xl border-t-2 border-slate-300 bg-gradient-to-b from-slate-700/80 to-slate-900/90 shadow-lg">
+                          <span className="font-display text-3xl font-black text-slate-300/80">2</span>
+                          <span className="font-mono text-[9px] text-slate-400">{selectedTourney.leaderboard[1].score} M</span>
+                        </div>
+                      </div>
+
+                      {/* 1st Place Podium (Highest Center) */}
+                      <div className="flex flex-col items-center">
+                        <div className="relative mb-1 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-500 font-display font-black text-slate-950 shadow-xl shadow-amber-500/30">
+                          {selectedTourney.leaderboard[0].username.charAt(0).toUpperCase()}
+                          <span className="absolute -top-3 text-lg">👑</span>
+                        </div>
+                        <span className="max-w-[85px] truncate font-display text-xs font-black text-amber-300">
+                          {selectedTourney.leaderboard[0].username}
+                        </span>
+                        <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 font-mono text-[10px] font-black text-amber-300 border border-amber-400/40">
+                          🪙 {selectedTourney.leaderboard[0].prize}
+                        </span>
+                        {/* 3D Pedestal Step 1 */}
+                        <div className="mt-2 flex h-28 w-24 flex-col items-center justify-center rounded-t-2xl border-t-2 border-amber-400 bg-gradient-to-b from-amber-600/30 via-slate-800/90 to-slate-900/95 shadow-xl shadow-amber-500/20">
+                          <span className="font-display text-4xl font-black text-amber-300">1</span>
+                          <span className="font-mono text-[10px] font-bold text-amber-300">{selectedTourney.leaderboard[0].score} M</span>
+                        </div>
+                      </div>
+
+                      {/* 3rd Place Podium */}
+                      <div className="flex flex-col items-center">
+                        <div className="relative mb-1 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-700 to-amber-800 font-display font-black text-white shadow-md">
+                          {selectedTourney.leaderboard[2].username.charAt(0).toUpperCase()}
+                          <span className="absolute -top-2 -right-1 text-sm">🥉</span>
+                        </div>
+                        <span className="max-w-[70px] truncate font-display text-[11px] font-bold text-slate-300">
+                          {selectedTourney.leaderboard[2].username}
+                        </span>
+                        <span className="rounded-full bg-amber-700/30 px-2 py-0.5 font-mono text-[9px] font-black text-amber-400 border border-amber-600/30">
+                          🪙 {selectedTourney.leaderboard[2].prize}
+                        </span>
+                        {/* 3D Pedestal Step 3 */}
+                        <div className="mt-2 flex h-14 w-20 flex-col items-center justify-center rounded-t-2xl border-t-2 border-amber-700 bg-gradient-to-b from-slate-800/80 to-slate-900/90 shadow-md">
+                          <span className="font-display text-2xl font-black text-amber-600/80">3</span>
+                          <span className="font-mono text-[9px] text-slate-400">{selectedTourney.leaderboard[2].score} M</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rest of Ranks List */}
+                  <div className="my-3 max-h-48 space-y-1.5 overflow-y-auto pr-1">
+                    {selectedTourney.leaderboard.slice(selectedTourney.leaderboard.length >= 3 ? 3 : 0).map((row) => (
+                      <div
+                        key={row.rank}
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-2.5 font-mono text-xs backdrop-blur-md"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex size-5 items-center justify-center rounded-full bg-white/10 text-[10px] font-bold text-slate-300">
+                            {row.rank}
+                          </span>
+                          <span className="font-bold text-slate-200">{row.username}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-white tabular-nums">{row.score} M</span>
+                          {row.prize > 0 && (
+                            <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-400/30">
+                              +{row.prize} 🪙
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   <Button
@@ -699,7 +754,7 @@ function HomePage() {
                       setSelectedTourney(null);
                       handleJoinTournament(t);
                     }}
-                    className="w-full rounded-xl bg-slate-900 py-3 font-display font-black text-white hover:bg-slate-800"
+                    className="mt-3 h-12 w-full rounded-xl bg-amber-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-lg shadow-amber-500/30 hover:bg-amber-300 active:scale-95"
                   >
                     PLAY TOURNAMENT RUN
                   </Button>
@@ -944,6 +999,65 @@ function HomePage() {
               </div>
             </div>
 
+            {/* Tier & Honor Badges Showcase (Matching Image 6) */}
+            <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-base font-black text-slate-900">
+                    Ninja Arena Badges
+                  </h3>
+                  <p className="font-mono text-xs text-slate-500">
+                    Tiered honor medals earned by winning matches & tournaments
+                  </p>
+                </div>
+                <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 font-mono text-[10px] font-black text-amber-800">
+                  {profile.stats.matchesWon >= 100
+                    ? "MYTHIC"
+                    : profile.stats.matchesWon >= 50
+                    ? "LEGEND"
+                    : profile.stats.matchesWon >= 25
+                    ? "DIAMOND"
+                    : profile.stats.matchesWon >= 10
+                    ? "GOLD"
+                    : profile.stats.matchesWon >= 3
+                    ? "EMERALD"
+                    : "ROOKIE"}
+                </span>
+              </div>
+
+              {/* 6 Badges Grid (Matching Screenshot 6) */}
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                {[
+                  { tier: "bronze" as TierBadgeKind, req: 0 },
+                  { tier: "emerald" as TierBadgeKind, req: 3 },
+                  { tier: "gold" as TierBadgeKind, req: 10 },
+                  { tier: "diamond" as TierBadgeKind, req: 25 },
+                  { tier: "amethyst" as TierBadgeKind, req: 50 },
+                  { tier: "mythic" as TierBadgeKind, req: 100 },
+                ].map(({ tier, req }) => {
+                  const unlocked = profile.stats.matchesWon >= req;
+                  return (
+                    <div
+                      key={tier}
+                      className={`relative flex flex-col items-center rounded-2xl border p-3 transition-all ${
+                        unlocked
+                          ? "border-amber-300/60 bg-gradient-to-b from-white to-amber-50/50 shadow-md shadow-amber-500/10"
+                          : "border-slate-200 bg-slate-50/60 opacity-40 grayscale"
+                      }`}
+                    >
+                      <TierBadge tier={tier} size="md" />
+                      <div className="mt-1 font-display text-[11px] font-black text-slate-800 text-center">
+                        {TIER_CONFIG[tier].title}
+                      </div>
+                      <div className="font-mono text-[9px] text-slate-500">
+                        {unlocked ? "✓ UNLOCKED" : `${req} Wins needed`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Google Account & Player Verification */}
             <div className="rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-lg shadow-slate-900/5 p-5 shadow-sm">
               <div>
@@ -998,7 +1112,7 @@ function HomePage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-4">
+                <div className="mt-4 space-y-2">
                   <Button
                     onClick={handleGoogleSignIn}
                     disabled={authLoading}
@@ -1025,6 +1139,16 @@ function HomePage() {
                     </svg>
                     CONTINUE WITH GOOGLE
                   </Button>
+                  <div className="flex items-center justify-between px-1">
+                    <span className="font-mono text-[10px] text-slate-400">Admin email: patelkeshav876@gmail.com</span>
+                    <button
+                      type="button"
+                      onClick={() => setGoogleHelpOpen(true)}
+                      className="font-mono text-[10px] text-amber-600 hover:text-amber-700 underline font-semibold"
+                    >
+                      OAuth Setup Guide ℹ️
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1369,6 +1493,81 @@ function HomePage() {
           </div>
         )}
       </main>
+
+      {/* Google OAuth Setup Guide Modal */}
+      {googleHelpOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-[#0d1424] p-6 text-white shadow-2xl">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                  <ShieldCheck className="size-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-black text-white">Google OAuth Setup</h3>
+                  <p className="font-mono text-xs text-slate-400">Enable Google sign-in in Supabase</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setGoogleHelpOpen(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 font-mono text-xs text-slate-300">
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-300 leading-relaxed">
+                ⚠️ <strong>"Unsupported provider: provider is not enabled"</strong> means the Google provider toggle is currently OFF in your Supabase project.
+              </div>
+
+              <ol className="list-decimal space-y-2 pl-4 text-slate-300 text-[11px] leading-relaxed">
+                <li>
+                  Open your <strong>Supabase Dashboard</strong> (project: <code className="text-amber-400">bbcfhzssrqoxfjamedry</code>).
+                </li>
+                <li>
+                  Go to <strong>Authentication</strong> → <strong>Providers</strong> → click <strong>Google</strong>.
+                </li>
+                <li>
+                  Toggle <strong>"Enable Google provider"</strong> to <strong>ON</strong>.
+                </li>
+                <li>
+                  Enter your Google Cloud <strong>Client ID</strong> and <strong>Client Secret</strong>, then click <strong>Save</strong>.
+                </li>
+                <li>
+                  (In Google Cloud Console) make sure your Authorized Redirect URI is: <br />
+                  <code className="break-all text-[10px] text-emerald-400">https://bbcfhzssrqoxfjamedry.supabase.co/auth/v1/callback</code>
+                </li>
+              </ol>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div className="font-bold text-white mb-1">⚡ Quick Admin Access (Instant):</div>
+                <p className="text-[11px] text-slate-400">
+                  You are already pre-whitelisted via <strong>Telegram ID: 1446312281</strong> or you can enter Master PIN <code className="text-amber-400 font-bold">8760</code> in the Admin tab.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => {
+                  setGoogleHelpOpen(false);
+                  setActiveTab("admin");
+                }}
+                className="flex-1 rounded-xl bg-amber-400 py-2.5 font-display text-xs font-black text-slate-950 hover:bg-amber-300 transition-all"
+              >
+                UNLOCK VIA ADMIN TAB (PIN 8760)
+              </button>
+              <button
+                onClick={() => setGoogleHelpOpen(false)}
+                className="rounded-xl border border-white/15 px-4 py-2.5 font-mono text-xs font-bold text-slate-300 hover:bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic Radar Matchmaking Scanner Modal */}
       {busy && (

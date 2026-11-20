@@ -2,9 +2,21 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerId } from "@/lib/game/player-id";
-import { GameScreen, ScoreBlock } from "@/components/game/game-screen";
+import { GameScreen } from "@/components/game/game-screen";
 import { Button } from "@/components/ui/button";
 import { TournamentStore } from "@/lib/tournament/store";
+import {
+  Users,
+  Copy,
+  Check,
+  Play,
+  LogOut,
+  ArrowLeft,
+  Trophy,
+  Coins,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 
 type Match = {
   id: string;
@@ -27,7 +39,7 @@ type Match = {
 export const Route = createFileRoute("/match/$code")({
   head: () => ({
     meta: [
-      { title: "Flipster Match — Race Your Friend" },
+      { title: "Flipster 1v1 Arena — Live Ninja Duel" },
       {
         name: "description",
         content:
@@ -53,6 +65,7 @@ function MatchPage() {
   const [missing, setMissing] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [resultLocked, setResultLocked] = useState(true);
+  const [copied, setCopied] = useState(false);
   const recordedRef = useRef<string | null>(null);
 
   const isP1 = !!match && match.p1_id === playerId;
@@ -126,7 +139,7 @@ function MatchPage() {
     };
   }, [code, playerId]);
 
-  // Realtime
+  // Realtime subscription
   useEffect(() => {
     if (!match?.id) return;
     const channel = supabase
@@ -189,7 +202,7 @@ function MatchPage() {
   const running =
     (match?.status === "countdown" || match?.status === "running") && countdown === 0;
 
-  // Ignore stray taps for a moment after the result screen appears
+  // Ignore stray taps for a moment after result screen appears
   useEffect(() => {
     if (match?.status !== "finished") {
       setResultLocked(true);
@@ -208,16 +221,25 @@ function MatchPage() {
     }
   }, [match, isP1, patch]);
 
+  const handleCopyLink = () => {
+    if (typeof window === "undefined") return;
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
   if (missing) {
     return (
       <Shell>
-        <p className="font-mono text-sm text-muted-foreground">Match {code} not found.</p>
-        <button
-          onClick={() => navigate({ to: "/" })}
-          className="mt-6 border-2 border-foreground px-6 py-3 font-display tracking-[0.2em]"
-        >
-          BACK
-        </button>
+        <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-b from-white/[0.12] to-white/[0.04] p-8 backdrop-blur-2xl shadow-2xl text-center text-white">
+          <p className="font-mono text-sm text-slate-400">Match room "{code}" was not found or expired.</p>
+          <Button
+            onClick={() => navigate({ to: "/" })}
+            className="mt-6 h-12 rounded-xl bg-amber-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-md hover:bg-amber-300 active:scale-95"
+          >
+            RETURN TO LOBBY
+          </Button>
+        </div>
       </Shell>
     );
   }
@@ -225,102 +247,290 @@ function MatchPage() {
   if (!match || !me || !them) {
     return (
       <Shell>
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-          Loading…
-        </p>
+        <div className="flex flex-col items-center justify-center p-8 text-center text-white">
+          <div className="size-10 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+          <p className="mt-4 font-mono text-xs uppercase tracking-[0.3em] text-slate-400">
+            CONNECTING TO ARENA…
+          </p>
+        </div>
       </Shell>
     );
   }
 
+  // Finished Results Screen
   if (match.status === "finished") {
     const myScore = me.score;
     const theirScore = them.score;
-    const result = myScore === theirScore ? "DRAW" : myScore > theirScore ? "YOU WIN" : "YOU LOSE";
+    const isWin = myScore > theirScore;
+    const isDraw = myScore === theirScore;
+    const resultTitle = isDraw ? "DRAW DUEL" : isWin ? "VICTORY!" : "DEFEAT";
+
     return (
       <Shell>
-        <p className="font-mono text-[11px] uppercase tracking-[0.35em] text-muted-foreground">
-          Match {match.code}
-        </p>
-        <h1 className="mt-4 font-display text-5xl tracking-[0.15em]">{result}</h1>
-        <div className="mt-10 flex w-full max-w-xs justify-between font-mono">
-          <ScoreBlock label="YOU" value={myScore} />
-          <ScoreBlock label="RIVAL" value={theirScore} align="right" />
-        </div>
-        <div
-          className={`mt-12 flex w-full max-w-xs flex-col gap-3 transition-opacity ${resultLocked ? "pointer-events-none opacity-40" : ""}`}
-        >
-          <button
-            disabled={resultLocked}
-            onClick={() =>
-              patch({
-                status: "waiting",
-                p1_ready: false,
-                p2_ready: false,
-                p1_score: 0,
-                p2_score: 0,
-                p1_alive: true,
-                p2_alive: true,
-                start_at: null,
-                seed: Math.floor(Math.random() * 2 ** 31),
-              })
-            }
-            className="border-2 border-foreground bg-foreground px-6 py-4 font-display tracking-[0.2em] text-background"
+        <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-b from-slate-900/95 via-indigo-950/90 to-slate-900/95 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl text-center text-white">
+          {/* Top Glint */}
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 size-48 rounded-full bg-amber-400/20 blur-2xl pointer-events-none" />
+
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.35em] text-slate-400">
+            ROOM {match.code} · RESULT
+          </p>
+
+          <div className="my-4">
+            <h1
+              className={`font-display text-5xl font-black tracking-wider drop-shadow-lg ${
+                isWin ? "text-amber-400" : isDraw ? "text-slate-300" : "text-rose-400"
+              }`}
+            >
+              {resultTitle}
+            </h1>
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1 font-mono text-xs font-bold text-amber-300 backdrop-blur-md">
+              <Coins className="size-3.5" />
+              <span>{isWin ? "+100 COINS WON" : isDraw ? "0 COINS (DRAW)" : "-50 COINS"}</span>
+            </div>
+          </div>
+
+          {/* 3D Score Comparison Grid */}
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className={`rounded-2xl border p-4 backdrop-blur-md ${isWin ? "border-amber-400/50 bg-amber-400/10 shadow-lg shadow-amber-500/20" : "border-white/10 bg-white/5"}`}>
+              <div className="font-mono text-[10px] uppercase text-slate-400">YOU ({TournamentStore.getProfile().username})</div>
+              <div className="mt-1 font-display text-3xl font-black text-white tabular-nums">
+                {myScore} M
+              </div>
+            </div>
+
+            <div className={`rounded-2xl border p-4 backdrop-blur-md ${!isWin && !isDraw ? "border-amber-400/50 bg-amber-400/10" : "border-white/10 bg-white/5"}`}>
+              <div className="font-mono text-[10px] uppercase text-slate-400">RIVAL ({isP1 ? match.p2_name || "Player 2" : match.p1_name || "Player 1"})</div>
+              <div className="mt-1 font-display text-3xl font-black text-white tabular-nums">
+                {theirScore} M
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`mt-8 flex flex-col gap-3 transition-opacity ${
+              resultLocked ? "pointer-events-none opacity-40" : ""
+            }`}
           >
-            REMATCH
-          </button>
-          <button
-            disabled={resultLocked}
-            onClick={() => navigate({ to: "/" })}
-            className="border-2 border-border px-6 py-4 font-display tracking-[0.2em] text-muted-foreground"
-          >
-            EXIT
-          </button>
+            <Button
+              disabled={resultLocked}
+              onClick={() =>
+                patch({
+                  status: "waiting",
+                  p1_ready: false,
+                  p2_ready: false,
+                  p1_score: 0,
+                  p2_score: 0,
+                  p1_alive: true,
+                  p2_alive: true,
+                  start_at: null,
+                  seed: Math.floor(Math.random() * 2 ** 31),
+                })
+              }
+              className="h-12 w-full rounded-xl bg-amber-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-lg shadow-amber-500/30 hover:bg-amber-300 active:scale-95"
+            >
+              <RotateCcw className="mr-2 size-4" /> PLAY REMATCH
+            </Button>
+            <Button
+              variant="outline"
+              disabled={resultLocked}
+              onClick={() => navigate({ to: "/" })}
+              className="h-12 w-full rounded-xl border border-white/20 bg-white/10 font-display text-xs font-black tracking-wider text-white hover:bg-white/20"
+            >
+              <LogOut className="mr-2 size-4" /> EXIT TO LOBBY
+            </Button>
+          </div>
         </div>
       </Shell>
     );
   }
 
+  // Pre-game Waiting Room
   if (!running) {
     return (
       <Shell>
-        <p className="font-mono text-[11px] uppercase tracking-[0.35em] text-muted-foreground">
-          Room code
-        </p>
-        <h1 className="mt-2 font-display text-6xl tracking-[0.35em]">{match.code}</h1>
+        <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-b from-white/[0.12] to-white/[0.04] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl shadow-black/60 text-center text-white">
+          {/* Subtle top glare */}
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 size-48 rounded-full bg-amber-400/15 blur-2xl pointer-events-none" />
 
-        {countdown !== null && countdown > 0 ? (
-          <p className="mt-14 font-display text-8xl tabular-nums">{countdown}</p>
-        ) : (
-          <>
-            <div className="mt-12 w-full max-w-xs space-y-3 font-mono text-sm">
-              <PlayerRow label="Player 1" joined ready={match.p1_ready} you={isP1} />
-              <PlayerRow
-                label="Player 2"
-                joined={!!match.p2_id}
-                ready={match.p2_ready}
-                you={isP2}
-              />
-            </div>
+          {/* Top header navigation */}
+          <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <button
+              onClick={() => navigate({ to: "/" })}
+              className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="size-4" /> LEAVE ROOM
+            </button>
+            <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300">
+              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE DUO ARENA
+            </span>
+          </div>
 
-            {isSpectator ? (
-              <p className="mt-10 font-mono text-xs text-muted-foreground">
-                This room is full — watching only.
-              </p>
-            ) : (
+          {/* Room Code Badge */}
+          <div className="mt-5">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">
+              ROOM CODE
+            </span>
+            <div className="mt-1 flex items-center justify-center gap-3">
+              <h1 className="font-display text-5xl sm:text-6xl font-black tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.6)]">
+                {match.code}
+              </h1>
               <button
-                onClick={setReady}
-                disabled={me.ready}
-                className="mt-10 w-full max-w-xs border-2 border-foreground bg-foreground px-6 py-4 font-display tracking-[0.2em] text-background disabled:bg-transparent disabled:text-muted-foreground"
+                onClick={handleCopyLink}
+                className="flex size-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-amber-300 active:scale-95 transition-all shadow-sm"
+                title="Copy Room Link"
               >
-                {me.ready ? "WAITING FOR RIVAL" : "I'M READY"}
+                {copied ? <Check className="size-4 text-emerald-400" /> : <Copy className="size-4" />}
               </button>
+            </div>
+            {copied && (
+              <p className="mt-1 font-mono text-[11px] font-bold text-emerald-400 animate-in fade-in">
+                Room invite link copied!
+              </p>
             )}
-            <Button variant="outline" onClick={() => navigate({ to: "/solo" })} className="mt-4 w-full max-w-xs">PLAY SOLO</Button>
-            <p className="mt-6 font-mono text-[11px] text-muted-foreground">
-              Share the code so your friend can join from their phone.
-            </p>
-          </>
-        )}
+          </div>
+
+          {countdown !== null && countdown > 0 ? (
+            <div className="my-10 animate-in zoom-in-75 duration-200">
+              <div className="relative mx-auto flex size-36 items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-4 border-amber-400/40 animate-ping" />
+                <div className="absolute inset-0 rounded-full border-2 border-amber-400/80 animate-spin" />
+                <span className="font-display text-7xl font-black text-amber-400 tabular-nums drop-shadow-[0_0_25px_#f59e0b]">
+                  {countdown}
+                </span>
+              </div>
+              <p className="mt-4 font-display text-sm font-black tracking-widest text-white uppercase">
+                GET READY TO RUN!
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* 3D Duel Player Slots */}
+              <div className="mt-6 space-y-3 text-left">
+                {/* Player 1 Card */}
+                <div className="flex items-center justify-between rounded-2xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-md shadow-inner">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 font-display text-base font-black text-slate-950 shadow-md">
+                      {(match.p1_name || "P1").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-black text-white">
+                        {match.p1_name || "Player 1"}
+                        {isP1 && <span className="ml-1.5 font-mono text-[10px] text-amber-300 font-bold">(YOU)</span>}
+                      </div>
+                      <div className="font-mono text-[10px] text-slate-400">Host Runner</div>
+                    </div>
+                  </div>
+                  <div>
+                    {match.p1_ready ? (
+                      <span className="flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3 py-1 font-mono text-xs font-bold text-emerald-300">
+                        <Check className="size-3 text-emerald-400" /> READY
+                      </span>
+                    ) : (
+                      <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 font-mono text-xs font-bold text-amber-300">
+                        JOINED
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Player 2 Card */}
+                {match.p2_id ? (
+                  <div className="flex items-center justify-between rounded-2xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-md shadow-inner">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 font-display text-base font-black text-slate-950 shadow-md">
+                        {(match.p2_name || "P2").charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-display text-sm font-black text-white">
+                          {match.p2_name || "Player 2"}
+                          {isP2 && <span className="ml-1.5 font-mono text-[10px] text-cyan-300 font-bold">(YOU)</span>}
+                        </div>
+                        <div className="font-mono text-[10px] text-slate-400">Challenger</div>
+                      </div>
+                    </div>
+                    <div>
+                      {match.p2_ready ? (
+                        <span className="flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3 py-1 font-mono text-xs font-bold text-emerald-300">
+                          <Check className="size-3 text-emerald-400" /> READY
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 font-mono text-xs font-bold text-amber-300">
+                          JOINED
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Dynamic Radar Waiting Challenger Slot */
+                  <div className="relative overflow-hidden rounded-2xl border border-dashed border-amber-400/40 bg-amber-400/[0.03] p-4 text-center">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {/* Radar Pulse animation */}
+                        <div className="relative flex size-11 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/10">
+                          <span className="absolute inset-0 rounded-xl border border-amber-400/50 animate-ping opacity-75" />
+                          <Users className="size-5 text-amber-400 animate-pulse" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-display text-sm font-black text-amber-300">
+                            Waiting for Rival...
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-400">
+                            Scanning room or invite a friend
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleCopyLink}
+                        className="rounded-xl border border-amber-400/40 bg-amber-400/15 px-3 py-1.5 font-mono text-xs font-bold text-amber-300 hover:bg-amber-400/25 active:scale-95 transition-all shadow-sm"
+                      >
+                        SHARE LINK
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-8 space-y-3">
+                {isSpectator ? (
+                  <p className="font-mono text-xs text-slate-400">
+                    Room is currently full — you are watching as spectator.
+                  </p>
+                ) : (
+                  <button
+                    onClick={setReady}
+                    disabled={me.ready}
+                    className={`h-14 w-full rounded-2xl font-display text-sm font-black tracking-widest uppercase transition-all shadow-xl ${
+                      me.ready
+                        ? "border border-emerald-400/40 bg-emerald-500/20 text-emerald-300 shadow-emerald-500/20 cursor-default"
+                        : "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 text-slate-950 shadow-emerald-500/30 hover:brightness-110 active:scale-95"
+                    }`}
+                  >
+                    {me.ready ? "✓ READY — WAITING FOR RIVAL" : "I'M READY TO RUN"}
+                  </button>
+                )}
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate({ to: "/solo" })}
+                    className="h-11 rounded-xl border border-white/20 bg-white/10 font-display text-xs font-black tracking-wider text-white hover:bg-white/20 active:scale-95"
+                  >
+                    <Play className="mr-1.5 size-3.5 fill-white" /> SOLO PRACTICE
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate({ to: "/" })}
+                    className="h-11 rounded-xl border border-white/15 bg-white/5 font-display text-xs font-black tracking-wider text-slate-300 hover:bg-white/15 active:scale-95"
+                  >
+                    <LogOut className="mr-1.5 size-3.5" /> EXIT ARENA
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </Shell>
     );
   }
@@ -346,34 +556,19 @@ function MatchPage() {
   );
 }
 
-function PlayerRow({
-  label,
-  joined,
-  ready,
-  you,
-}: {
-  label: string;
-  joined: boolean;
-  ready: boolean;
-  you: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between border-2 border-border px-4 py-3">
-      <span className="text-foreground">
-        {label}
-        {you && <span className="text-muted-foreground"> (you)</span>}
-      </span>
-      <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-        {!joined ? "waiting" : ready ? "ready" : "joined"}
-      </span>
-    </div>
-  );
-}
-
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-6 py-10 text-foreground">
-      {children}
+    <main className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-[#090d18] px-4 py-8 text-white overflow-hidden selection:bg-transparent">
+      {/* 3D Ambient Glowing Mesh Background */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-32 -left-32 size-[420px] rounded-full bg-gradient-to-br from-amber-500/25 to-orange-600/10 blur-[100px]" />
+        <div className="absolute top-1/3 -right-32 size-[450px] rounded-full bg-gradient-to-br from-indigo-600/25 via-cyan-500/15 to-purple-600/10 blur-[120px]" />
+        <div className="absolute -bottom-32 left-1/4 size-[400px] rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-600/10 blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+        {children}
+      </div>
     </main>
   );
 }
