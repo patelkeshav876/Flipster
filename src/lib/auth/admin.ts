@@ -26,6 +26,7 @@ const DEFAULT_WHITELISTED_IDENTITIES = [
 const DEFAULT_ADMIN_EMAILS = [
   "patelkeshab876@gmail.com",
   "patelkeshav876@gmail.com",
+  "aakharisamosha36@gmail.com",
 ];
 
 export interface TelegramAdminUser {

@@ -1140,7 +1140,7 @@ function HomePage() {
                     CONTINUE WITH GOOGLE
                   </Button>
                   <div className="flex items-center justify-between px-1">
-                    <span className="font-mono text-[10px] text-slate-400">Admin email: patelkeshav876@gmail.com</span>
+                    <span className="font-mono text-[10px] text-slate-400">Admin emails: patelkeshav876 / aakharisamosha36</span>
                     <button
                       type="button"
                       onClick={() => setGoogleHelpOpen(true)}
