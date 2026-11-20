@@ -1523,7 +1523,7 @@ function HomePage() {
 
               <ol className="list-decimal space-y-2 pl-4 text-slate-300 text-[11px] leading-relaxed">
                 <li>
-                  Open your <strong>Supabase Dashboard</strong> (project: <code className="text-amber-400">bbcfhzssrqoxfjamedry</code>).
+                  Open your <strong>Supabase Dashboard</strong> (project: <code className="text-amber-400">zlbymyvzvlosjyzceoaj</code>).
                 </li>
                 <li>
                   Go to <strong>Authentication</strong> → <strong>Providers</strong> → click <strong>Google</strong>.
@@ -1536,7 +1536,7 @@ function HomePage() {
                 </li>
                 <li>
                   (In Google Cloud Console) make sure your Authorized Redirect URI is: <br />
-                  <code className="break-all text-[10px] text-emerald-400">https://bbcfhzssrqoxfjamedry.supabase.co/auth/v1/callback</code>
+                  <code className="break-all text-[10px] text-emerald-400">https://zlbymyvzvlosjyzceoaj.supabase.co/auth/v1/callback</code>
                 </li>
               </ol>
 
