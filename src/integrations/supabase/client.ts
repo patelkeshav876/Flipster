@@ -27,21 +27,26 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
-const DEFAULT_SUPABASE_URL = "https://zlbymyvzvlosjyzceoaj.supabase.co";
-const DEFAULT_SUPABASE_KEY = "sb_publishable_Lodp7NF1cBBJlufrtg0GEA_44MPbBRr";
+const ACTIVE_SUPABASE_URL = "https://zlbymyvzvlosjyzceoaj.supabase.co";
+const ACTIVE_SUPABASE_KEY = "sb_publishable_Lodp7NF1cBBJlufrtg0GEA_44MPbBRr";
 
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env or project defaults for SSR and production builds
-  const SUPABASE_URL =
+  // If env var points to old dead project bbcfhzssrqoxfjamedry, override with active project
+  let SUPABASE_URL =
     import.meta.env['VITE_SUPABASE_URL'] ||
     process.env['SUPABASE_URL'] ||
-    DEFAULT_SUPABASE_URL;
+    ACTIVE_SUPABASE_URL;
 
-  const SUPABASE_PUBLISHABLE_KEY =
+  let SUPABASE_PUBLISHABLE_KEY =
     import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
     process.env['SUPABASE_PUBLISHABLE_KEY'] ||
-    DEFAULT_SUPABASE_KEY;
+    ACTIVE_SUPABASE_KEY;
+
+  if (!SUPABASE_URL || SUPABASE_URL.includes("bbcfhzssrqoxfjamedry")) {
+    SUPABASE_URL = ACTIVE_SUPABASE_URL;
+    SUPABASE_PUBLISHABLE_KEY = ACTIVE_SUPABASE_KEY;
+  }
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [

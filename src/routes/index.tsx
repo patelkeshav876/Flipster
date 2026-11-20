@@ -1181,12 +1181,13 @@ function HomePage() {
                 </div>
               </div>
             ) : (
-              <div className="text-center pt-2">
+              <div className="pt-2">
                 <button
                   onClick={() => setActiveTab("admin")}
-                  className="font-mono text-[11px] text-slate-400 hover:text-slate-600 underline"
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 py-3 font-mono text-xs font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition-all"
                 >
-                  Admin Portal Login (Passcode)
+                  <KeyRound className="size-4 text-amber-500" />
+                  <span>Admin Unlock with Master PIN (8760)</span>
                 </button>
               </div>
             )}
