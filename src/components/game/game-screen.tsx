@@ -32,18 +32,46 @@ export function GameScreen({
   const [distance, setDistance] = useState(0);
   const [dead, setDead] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [portraitMobile, setPortraitMobile] = useState(false);
-  const [countdown, setCountdown] = useState(3);
+  const [portraitMobile, setPortraitMobile] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const isPhone = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
+    return isPhone && window.innerHeight > window.innerWidth;
+  });
+  const [engineStarted, setEngineStarted] = useState<boolean>(false);
+  const [countdown, setCountdown] = useState<number>(3);
+  const prevPortraitRef = useRef<boolean>(portraitMobile);
   const [powers, setPowers] = useState<{ shield: number; speed: number; stars?: number }>({ shield: 0, speed: 0, stars: 0 });
   const callbacks = useRef({ onScore, onDeath });
   callbacks.current = { onScore, onDeath };
 
-  // Countdown timer
+  // Countdown timer: only ticks when in landscape (portraitMobile is false)
   useEffect(() => {
-    if (countdown <= 0) return;
-    const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [countdown]);
+    // If device is in portrait, hold countdown at 3
+    if (portraitMobile) {
+      if (!engineStarted) {
+        setCountdown(3);
+      }
+      return;
+    }
+
+    // In landscape: tick down 3 -> 2 -> 1 -> 0
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0 && !engineStarted) {
+      setEngineStarted(true);
+    }
+  }, [portraitMobile, countdown, engineStarted]);
+
+  // When user rotates back from portrait into landscape while game was running, give 3s ready countdown
+  useEffect(() => {
+    if (prevPortraitRef.current && !portraitMobile && engineStarted && !dead) {
+      setCountdown(3);
+    }
+    prevPortraitRef.current = portraitMobile;
+  }, [portraitMobile, engineStarted, dead]);
 
   useEffect(() => {
     const telegram = window.Telegram?.WebApp;
@@ -62,7 +90,7 @@ export function GameScreen({
       }
       try {
         const orientation = window.screen.orientation;
-        if (orientation?.type.startsWith("landscape")) {
+        if (orientation?.type?.startsWith("landscape")) {
           telegram?.lockOrientation?.();
         } else if (orientation?.lock) {
           await orientation.lock("landscape");
@@ -90,7 +118,7 @@ export function GameScreen({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || spectator || countdown > 0) return;
+    if (!canvas || spectator || !engineStarted) return;
     let lastSent = 0;
     const engine = new GameEngine({
       canvas,
@@ -121,15 +149,16 @@ export function GameScreen({
       engineRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, spectator, countdown]);
+  }, [seed, spectator, engineStarted]);
 
   useEffect(() => {
-    engineRef.current?.setPaused(paused || portraitMobile);
-  }, [paused, portraitMobile]);
+    const shouldPause = paused || portraitMobile || countdown > 0;
+    engineRef.current?.setPaused(shouldPause);
+  }, [paused, portraitMobile, countdown]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (countdown > 0) return;
+      if (countdown > 0 || portraitMobile || paused || dead) return;
       if (e.code === "Space" || e.code === "ArrowUp") {
         e.preventDefault();
         if (!e.repeat) engineRef.current?.jump();
@@ -140,17 +169,17 @@ export function GameScreen({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [countdown]);
+  }, [countdown, portraitMobile, paused, dead]);
 
   const handleFlip = useCallback(() => {
-    if (countdown > 0) return;
+    if (countdown > 0 || portraitMobile || paused || dead) return;
     engineRef.current?.flip();
-  }, [countdown]);
+  }, [countdown, portraitMobile, paused, dead]);
 
   const handleJump = useCallback(() => {
-    if (countdown > 0) return;
+    if (countdown > 0 || portraitMobile || paused || dead) return;
     engineRef.current?.jump();
-  }, [countdown]);
+  }, [countdown, portraitMobile, paused, dead]);
 
   return (
     <main
@@ -166,18 +195,54 @@ export function GameScreen({
 
       {/* Countdown overlay */}
       {countdown > 0 && !portraitMobile && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="flex flex-col items-center gap-3">
-            <p className="font-mono text-sm text-muted-foreground tracking-widest">GET READY</p>
-            <p className="font-display text-8xl font-black text-foreground animate-pulse">{countdown}</p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-1 font-mono text-xs font-bold text-amber-400 uppercase tracking-widest backdrop-blur-md">
+              <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+              <span>{engineStarted ? "GET READY TO RESUME" : "GET READY TO RUN"}</span>
+            </div>
+            <p className="font-display text-8xl font-black text-white drop-shadow-[0_0_30px_rgba(245,158,11,0.7)] animate-pulse">
+              {countdown}
+            </p>
+            <p className="font-mono text-xs font-semibold text-slate-300">
+              Left side: FLIP · Right side: JUMP
+            </p>
           </div>
         </div>
       )}
 
+      {/* Landscape Orientation Guard with Auto-Hold */}
       {portraitMobile && (
-        <div role="status" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5 bg-background text-center text-foreground">
-          <Smartphone className="size-12 rotate-90" aria-hidden="true" />
-          <p className="font-display text-2xl font-bold tracking-[0.12em]">ROTATE DEVICE</p>
+        <div
+          role="status"
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 bg-[#090d18]/95 text-center text-white backdrop-blur-2xl animate-in fade-in"
+        >
+          {/* Animated Glowing Phone Indicator */}
+          <div className="relative mb-6 flex size-24 items-center justify-center">
+            <div className="absolute inset-0 rounded-3xl bg-amber-400/20 blur-xl animate-pulse" />
+            <div className="relative flex size-20 items-center justify-center rounded-2xl border-2 border-amber-400/50 bg-white/5 shadow-inner">
+              <Smartphone className="size-10 text-amber-400 rotate-90" />
+            </div>
+          </div>
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1 font-mono text-xs font-bold text-amber-400 tracking-wider">
+            <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+            <span>{engineStarted ? "RUN PAUSED" : "LANDSCAPE REQUIRED"}</span>
+          </div>
+
+          <h2 className="mt-3 font-display text-2xl sm:text-3xl font-black tracking-wide text-white">
+            ROTATE YOUR PHONE
+          </h2>
+
+          <p className="mt-2 max-w-xs font-mono text-xs text-slate-400 leading-relaxed">
+            {engineStarted
+              ? "Turn device sideways to resume. A 3-second countdown will start automatically."
+              : "Turn device sideways to play. The 3-second countdown will begin once rotated."}
+          </p>
+
+          <div className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 font-mono text-[11px] text-slate-300">
+            <span>🎮 Game auto-holds until rotated</span>
+          </div>
         </div>
       )}
 
@@ -197,7 +262,7 @@ export function GameScreen({
             <ArrowLeft className="size-3.5" />
             <span>EXIT</span>
           </button>
-          {solo && !dead && countdown <= 0 && (
+          {solo && !dead && countdown <= 0 && !portraitMobile && (
             <>
               <span className="h-4 w-px bg-white/25" />
               <button
